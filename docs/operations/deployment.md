@@ -89,9 +89,9 @@ Recommended for: shared use, multi-user, persistent data, public deployment.
    - **DB URL**: Settings -> Database -> Connection string -> URI (for migrations)
 3. Apply the schema:
    ```bash
-   psql "$SUPABASE_DB_URL" < docs/supabase-schema.sql
+   psql "$SUPABASE_DB_URL" < drizzle/0000_smooth_blue_blade.sql
    ```
-   Or paste `docs/supabase-schema.sql` into the Supabase dashboard SQL editor.
+   Or paste `drizzle/0000_smooth_blue_blade.sql` into the Supabase dashboard SQL editor.
 4. Seed augmentations:
    ```bash
    pnpm db:seed:supabase
@@ -102,7 +102,7 @@ Recommended for: shared use, multi-user, persistent data, public deployment.
 Coolify (recommended for self-hosted):
 
 1. Create new Application in Coolify, source = this GitHub repo
-2. Build type = Dockerfile, port = 3030
+2. Build type: a Node.js build pack with pnpm support (Coolify's default Nixpacks auto-detects `pnpm-lock.yaml`; or use a custom `Dockerfile` if you need fine-grained control), port = 3030
 3. Environment variables:
    ```
    ENCRYPTION_KEY=<openssl rand -base64 32>
@@ -148,7 +148,7 @@ For design-tester-lab this means:
 
 - Public deployments must link to the source repo (https://github.com/xiaoxinny/design-tester-lab)
 - Any modifications you make must be published under AGPL-3.0
-- The "Corresponding Source" includes all scripts required to regenerate the binary (Dockerfile, build config, schema migrations)
+- The "Corresponding Source" includes all scripts required to regenerate the binary (build config, schema migrations, environment templates)
 
 This is a non-trivial obligation. If you don't want it, fork under a different license (requires permission from contributors) or use a non-AGPL alternative.
 

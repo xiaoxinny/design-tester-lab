@@ -46,9 +46,9 @@ cp .env.example .env
 #   Settings -> Database -> Connection string -> URI
 
 # Apply the schema to your Supabase project (pick one):
-#   Option A — via the Supabase dashboard SQL editor: paste docs/supabase-schema.sql
+#   Option A — via the Supabase dashboard SQL editor: paste `drizzle/0000_smooth_blue_blade.sql`
 #   Option B — via psql from your local machine:
-#     psql "$SUPABASE_DB_URL" < docs/supabase-schema.sql
+#     psql "$SUPABASE_DB_URL" < drizzle/0000_smooth_blue_blade.sql
 
 # Seed the 8 augmentations into the remote Supabase Postgres:
 pnpm db:seed:supabase
@@ -89,7 +89,7 @@ Recovery codes and email reset live in Supabase Cloud mode.
 ### Moving between local mode and Supabase Cloud
 
 1. Create a Supabase Cloud project (free tier)
-2. Apply `docs/supabase-schema.sql` to it
+2. Apply `drizzle/0000_smooth_blue_blade.sql` to it
 3. Fill in the Supabase section of `.env`
 4. Restart the app
 5. Sign up in the Supabase Auth flow
@@ -103,7 +103,7 @@ Recovery codes and email reset live in Supabase Cloud mode.
 - **Model providers** — single OpenAI-compatible adapter (Anthropic, OpenAI, Google, OpenRouter, Ollama, and any OpenAI-compatible endpoint)
 - **Lint engine** — `axe-core`, `apca-w3`, and custom token-consistency, spacing-scale, and semantic-HTML checks, all deterministic, all running in a sandboxed iframe
 - **Augmentations** — YAML files in `content/augmentations/*.md`, validated against a schema, loaded into SQLite at build time
-- **Deployment** — multi-stage Dockerfile, Coolify-friendly (single-node Swarm, proper healthcheck, non-root user, no `npx` in CMD)
+- **Deployment** — see [`docs/operations/deployment.md`](docs/operations/deployment.md) for the production deployment shape (Coolify, Docker-based PaaS, self-hosted)
 
 ## The augmentation system
 

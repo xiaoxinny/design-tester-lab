@@ -1,32 +1,26 @@
 # Security advisories
 
-> Status of open Dependabot alerts and the project's remediation posture. Numbers reflect the most recent re-scan of `pnpm-lock.yaml` by GitHub Dependabot; counts may be stale until the next push event triggers a re-scan.
+> Status of open Dependabot alerts and the project's remediation posture. Counts reflect the Dependabot UI snapshot as of the latest push to `pnpm-lock.yaml`.
 
 ## Status
 
-| Metric | Count (as of last re-scan) |
+| Metric | Count |
 |---|---|
-| Total open alerts | 16 |
+| Total open alerts | 33 |
 | Critical | 0 |
-| High | 5 |
-| Medium | 8 |
-| Low | 3 |
+| High | 11 |
+| Medium | 16 |
+| Low | 6 |
 
-> The GitHub Dependabot UI may show a different count (for example, 33 or 58) immediately after a push. Dependabot's re-scan runs on its own schedule; the values above reflect the alerts that match the lockfile at the time the last re-scan completed.
-
-## Affected packages
-
-| Package | Scope | Severity profile |
-|---|---|---|
-| `next` | direct | 5 high, 8 medium, 3 low |
+The 33 open alerts all target the `next` package (Next.js 14.x line issues that require a major-version upgrade to Next.js 15 or 16).
 
 ## Required remediation
 
-All 16 alerts match the current `pnpm-lock.yaml` and require a major-version upgrade to Next.js 15 or 16. The upgrade is blocked because:
+All 33 alerts require a major-version upgrade to Next.js 15 or 16. The upgrade is blocked because:
 
 - The application uses none of the affected features (Image Optimization API, middleware redirects, Server Components for HTTP deserialization, App Router i18n).
 - A Next.js 15 upgrade has breaking changes that warrant a dedicated upgrade session
-- The 16 open alerts split into: 5 high (DoS, middleware bypass, SSRF), 8 medium (XSS, cache poisoning, cache growth), 3 low (dev origin check, race condition)
+- The 33 open alerts split into: 11 high (DoS, middleware bypass, SSRF, cache key confusion, RCE via image optimization), 16 medium (XSS, cache poisoning, cache growth, request smuggling), 6 low (dev origin check, race condition, cache collisions)
 
 ## Mitigation
 
@@ -38,4 +32,4 @@ Re-evaluate at production deployment. If on Next.js 14 at deployment time, sched
 
 ## Re-scan
 
-The numbers above are derived from a one-time `pnpm audit --prod` after the dep upgrade in commit `752392f`. To trigger a fresh Dependabot re-scan: push any change to `pnpm-lock.yaml`, or use the Dependabot UI's "Re-run all jobs" action. The doc will be reconciled on the next re-scan.
+These numbers match the most recent Dependabot UI snapshot. A re-scan triggers on the next push to `pnpm-lock.yaml`, or via the Dependabot UI's "Re-run all jobs" action. Until then, the GitHub API returns the cached count.

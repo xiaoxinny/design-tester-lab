@@ -4,7 +4,7 @@ User-facing documentation for design-tester-lab.
 
 ## Scope and contents
 
-This repository is a Next.js application. Source code is in `src/`, augmentation content is in `content/augmentations/`, schemas and migrations are in `src/db/` and `drizzle/`, and build configuration is at the repo root (`package.json`, `Dockerfile`, `tsconfig.json`, and so on).
+This repository is a Next.js application. Source code is in `src/`, augmentation content is in `content/augmentations/`, schemas and migrations are in `src/db/` and `drizzle/`, and build configuration is at the repo root (`package.json`, `tsconfig.json`, and so on).
 
 ## Subdirectories
 

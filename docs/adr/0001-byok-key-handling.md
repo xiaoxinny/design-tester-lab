@@ -26,7 +26,7 @@ When the user saves a key via the BYOK form:
 
 - AES-256-GCM with a **per-row 96-bit random IV** stored alongside ciphertext
 - **AAD** = `user_id:credential_id` so swapped-credential attacks fail the auth tag
-- `key_version` column on `model_credentials` table enables rotation without downtime (multi-version decryption reads the active key_version first, then earlier versions)
+- `key_version` column on `model_credentials` table enables rotation without downtime (multi-version decryption reads the active key_version, then earlier versions)
 - Master key from `ENCRYPTION_KEY` env var (32-byte base64); app refuses to start if missing, wrong size, or equal to `SESSION_SECRET` (key-separation requirement)
 
 ### Memory handling
