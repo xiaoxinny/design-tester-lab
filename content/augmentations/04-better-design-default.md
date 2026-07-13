@@ -6,7 +6,7 @@ description: Multi-brand shadcn-based token system, 31 themes available. Communi
 category: tokens
 license: MIT
 source: https://github.com/marvkr/better-design
-conflicts_with: [shadcn-tokens, m3-tokens, tailwind-default]
+conflicts_with: [shadcn-tokens, m3-tokens]
 requires: []
 ---
 

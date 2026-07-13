@@ -6,7 +6,7 @@ description: Material Design 3 foundation tokens — surface roles, M3 color sys
 category: tokens
 license: Apache-2.0
 source: https://m3.material.io
-conflicts_with: [shadcn-tokens, better-design-default, tailwind-default]
+conflicts_with: [shadcn-tokens, better-design-default]
 requires: []
 ---
 
