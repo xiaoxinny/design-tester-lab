@@ -72,11 +72,12 @@ Negative:
 
 To verify the BYOK path is correctly implemented, check:
 
-- `src/lib/crypto.ts` uses `crypto.createCipheriv('aes-256-gcm', key, iv)` with a fresh IV per encrypt
-- AAD parameter is set to `` Buffer.from(`${userId}:${credentialId}`) `` (or equivalent) on both encrypt and decrypt
+- `src/lib/crypto.ts` uses `crypto.createCipheriv('aes-256-gcm', key, iv)` with a fresh 96-bit random IV per encrypt
+- AAD parameter is set to `` Buffer.from(`${userId}:${credentialId}`) `` on both encrypt and decrypt
 - The logger has a `redact` hook that scrubs the four provider-key patterns listed in this section
-- `db:verify` includes a roundtrip test: encrypt a known string, decrypt it, assert deep-equal
-- A negative test: encrypt a credential, modify one byte of the ciphertext, expect decrypt to throw
+- `pnpm test:crypto` includes a roundtrip test (encrypt a known string, decrypt it, assert deep-equal)
+- `pnpm test:crypto` includes a negative test (encrypt a credential, modify one byte of the ciphertext, expect decrypt to throw)
+- `pnpm test:crypto` includes an AAD-binding test (encrypt with one (userId, credentialId) pair, attempt to decrypt with a different pair, expect throw)
 
 ## References
 
@@ -84,4 +85,4 @@ To verify the BYOK path is correctly implemented, check:
 - NIST SP 800-38D (AES-GCM specification)
 - RFC 9106 (Argon2 standardization)
 - design-tester-lab `docs/security/threat-model.md` (companion document)
-- design-tester-lab `docs/research/09-adversarial-review-v2.md` (the VLM-judge question)
+- design-tester-lab `docs/research/vlm-critique-evaluation.md` (the VLM-judge question)

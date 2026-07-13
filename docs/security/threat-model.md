@@ -66,7 +66,7 @@ The following are explicitly out of scope:
 
 | Threat | Test | Status |
 |---|---|---|
-| BYOK roundtrip | `scripts/test-crypto.ts` (unimplemented) | — |
+| BYOK roundtrip | `pnpm test:crypto` | ✅ 19 cases pass (roundtrip, negative, AAD-binding, malformed inputs) |
 | Logger redaction | `scripts/test-logger-redaction.ts` (unimplemented) | — |
 | AUTH_DISABLED guard | `scripts/test-env.ts` | ✅ 14 cases pass |
 | ENCRYPTION_KEY size | `scripts/test-env.ts` | ✅ |
