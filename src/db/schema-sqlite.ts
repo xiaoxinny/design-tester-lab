@@ -253,6 +253,39 @@ export const runComparisons = sqliteTable(
 );
 
 // =====================================================================
+// Audit log (security-relevant events; no FK cascade — retained on user delete)
+// =====================================================================
+
+export const auditLog = sqliteTable(
+  'audit_log',
+  {
+    id: text('id').primaryKey(), // uuid-as-string; generated in app code
+    // user_id is nullable because some audit events (e.g. login failure with
+    // unknown email) have no associated user. The audit row records what
+    // happened regardless of who triggered it.
+    userId: text('user_id').references(() => users.id, { onDelete: 'set null' }),
+    // Event taxonomy. Action is a verb in snake_case (login_success,
+    // credential_added, credential_used, login_failure_unknown_email,
+    // rate_limited, etc.). target_type + target_id pin the affected row.
+    action: text('action').notNull(),
+    targetType: text('target_type'),
+    targetId: text('target_id'),
+    // Free-form metadata. Use sparingly: usually empty, sometimes an IP
+    // address, a request id, or the first few chars of a credential label.
+    // Never include the credential itself or any other secret.
+    metadata: text('metadata'), // JSON-encoded; kept as text for SQLite portability
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+  },
+  (t) => ({
+    userIdx: index('audit_log_user_idx').on(t.userId),
+    actionIdx: index('audit_log_action_idx').on(t.action),
+    createdAtIdx: index('audit_log_created_at_idx').on(t.createdAt),
+  }),
+);
+
+// =====================================================================
 // Type exports (for use in app code)
 // =====================================================================
 
@@ -272,3 +305,5 @@ export type Run = typeof runs.$inferSelect;
 export type NewRun = typeof runs.$inferInsert;
 export type RunComparison = typeof runComparisons.$inferSelect;
 export type NewRunComparison = typeof runComparisons.$inferInsert;
+export type AuditLog = typeof auditLog.$inferSelect;
+export type NewAuditLog = typeof auditLog.$inferInsert;
