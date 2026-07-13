@@ -52,3 +52,19 @@ export function applyRateLimit(
     },
   );
 }
+
+/**
+ * Apply a pre-authentication, per-IP rate limit. This is the cheap bucket
+ * that runs before requireUser() so an attacker without a valid cookie
+ * does not get to consume the post-auth per-user bucket (which is keyed
+ * on userId) and does not cause session-DB lookups.
+ *
+ * Use this as the FIRST line of any route handler that does an auth check.
+ * It does NOT replace the per-user rate limit; it complements it. The
+ * per-user limit (in the route's own ROUTE_LIMITS entry) catches a
+ * compromised-credential attack. The pre-auth limit catches a
+ * no-credential hammering attack.
+ */
+export function applyPreAuthRateLimit(req: NextRequest): NextResponse | null {
+  return applyRateLimit(req, 'auth.precheck');
+}

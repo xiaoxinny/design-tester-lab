@@ -1,7 +1,7 @@
 /**
  * Tests for src/lib/rate-limit.ts.
  */
-import { createRateLimiterWithClock, createRateLimiter, _resetAllRateLimiters } from '../src/lib/rate-limit';
+import { createRateLimiterWithClock, createRateLimiter, _resetAllRateLimiters, getRouteRateLimit } from '../src/lib/rate-limit';
 
 let pass = 0;
 let fail = 0;
@@ -170,6 +170,27 @@ function main(): void {
     fail_('createRateLimiter (real clock) deny 3rd', 'allowed');
   } else {
     ok('createRateLimiter (real clock) works', '2 allowed, 3rd denied');
+  }
+
+  // === auth.precheck route is in the table ===
+
+  // The precheck bucket is the per-IP, pre-auth bucket used on every
+  // protected route. It must exist in the route table so the rate-limit
+  // primitive doesn't throw at first request.
+  let precheckErr: Error | null = null;
+  let precheckConfig: { capacity: number; refillPerSec: number } | null = null;
+  try {
+    const r = getRouteRateLimit('auth.precheck');
+    precheckConfig = { capacity: r.capacity, refillPerSec: r.refillPerSec };
+  } catch (e) {
+    precheckErr = e as Error;
+  }
+  if (precheckErr) {
+    fail_('auth.precheck is in the route table', `threw: ${precheckErr.message}`);
+  } else if (!precheckConfig || precheckConfig.capacity < 1 || precheckConfig.refillPerSec <= 0) {
+    fail_('auth.precheck has sane config', `got: ${JSON.stringify(precheckConfig)}`);
+  } else {
+    ok('auth.precheck is in the route table with sane config', JSON.stringify(precheckConfig));
   }
 
   // === _resetAllRateLimiters ===

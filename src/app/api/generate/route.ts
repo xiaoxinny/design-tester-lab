@@ -26,7 +26,7 @@ import { z } from 'zod';
 import { runGeneration, GenerationError } from '@/lib/generation/runner';
 import { resolveEnv } from '@/lib/env';
 import { requireUser } from '@/lib/auth-guard';
-import { applyRateLimit } from '@/lib/rate-limit-http';
+import { applyRateLimit, applyPreAuthRateLimit } from '@/lib/rate-limit-http';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,6 +65,10 @@ function getAuthedUserId(req: NextRequest): string {
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  // Pre-auth, per-IP cheap bucket. Catches "no cookie" hammering before
+  // the session-DB lookup in getAuthedUserId.
+  const preLimited = applyPreAuthRateLimit(req);
+  if (preLimited) return preLimited;
   let body: unknown;
   try {
     body = await req.json();

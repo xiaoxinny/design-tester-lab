@@ -13,7 +13,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { handleAddCredential, handleListCredentials, CredentialsHandlerError } from '@/lib/credentials-handlers';
 import { requireUser } from '@/lib/auth-guard';
 import { resolveEnv } from '@/lib/env';
-import { applyRateLimit } from '@/lib/rate-limit-http';
+import { applyRateLimit, applyPreAuthRateLimit } from '@/lib/rate-limit-http';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,6 +33,10 @@ function getAuthedUserId(req: NextRequest): string {
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  // Pre-auth, per-IP cheap bucket. Catches "no cookie" hammering before
+  // the session-DB lookup in getAuthedUserId.
+  const preLimited = applyPreAuthRateLimit(req);
+  if (preLimited) return preLimited;
   // Auth first so the per-user rate limit is keyed on the userId, not
   // the IP. Auth failures (401) don't consume a token.
   let userId: string;
@@ -64,6 +68,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 }
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
+  const preLimited = applyPreAuthRateLimit(req);
+  if (preLimited) return preLimited;
   try {
     const userId = getAuthedUserId(req);
     const limited = applyRateLimit(req, 'credentials.read', userId);

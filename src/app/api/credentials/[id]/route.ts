@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { handleGetCredential, handleDeleteCredential, CredentialsHandlerError } from '@/lib/credentials-handlers';
 import { requireUser } from '@/lib/auth-guard';
 import { resolveEnv } from '@/lib/env';
-import { applyRateLimit } from '@/lib/rate-limit-http';
+import { applyRateLimit, applyPreAuthRateLimit } from '@/lib/rate-limit-http';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +26,8 @@ function getAuthedUserId(req: NextRequest): string {
 }
 
 export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResponse> {
+  const preLimited = applyPreAuthRateLimit(req);
+  if (preLimited) return preLimited;
   try {
     const userId = getAuthedUserId(req);
     const limited = applyRateLimit(req, 'credentials.read', userId);
@@ -41,6 +43,8 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
 }
 
 export async function DELETE(req: NextRequest, ctx: RouteContext): Promise<NextResponse> {
+  const preLimited = applyPreAuthRateLimit(req);
+  if (preLimited) return preLimited;
   try {
     const userId = getAuthedUserId(req);
     const limited = applyRateLimit(req, 'credentials.write', userId);

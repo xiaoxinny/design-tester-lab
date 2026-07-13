@@ -170,6 +170,7 @@ export interface RouteRateLimit {
 }
 
 export const ROUTE_LIMITS: Record<string, RouteRateLimit> = {
+  'auth.precheck': { route: 'auth.precheck', capacity: 200, refillPerSec: 200 / 60 }, // 200/min per IP, pre-auth cheap bucket
   'auth.login': { route: 'auth.login', capacity: 5, refillPerSec: 5 / 60 }, // 5 per minute
   'auth.signup': { route: 'auth.signup', capacity: 5, refillPerSec: 5 / 3600 }, // 5 per hour
   'auth.logout': { route: 'auth.logout', capacity: 30, refillPerSec: 0.5 }, // 30 per minute
