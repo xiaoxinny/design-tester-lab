@@ -17,7 +17,13 @@
     "db:verify": "tsx scripts/verify-schema.ts && tsx scripts/verify-seed.ts",
     "db:studio": "drizzle-kit studio",
     "augmentations:validate": "tsx src/lib/augmentations/validate-all.ts",
-    "test": "vitest",
+    "test:env": "tsx scripts/test-env.ts",
+    "test:crypto": "tsx scripts/test-crypto.ts",
+    "test:password": "tsx scripts/test-password.ts",
+    "test:session": "tsx scripts/test-session.ts",
+    "test:auth-guard": "tsx scripts/test-auth-guard.ts",
+    "test:auth-handlers": "tsx scripts/test-auth-handlers.ts",
+    "test": "pnpm test:env && pnpm test:crypto && pnpm test:password && pnpm test:session && pnpm test:auth-guard && pnpm test:auth-handlers && pnpm db:verify",
     "test:e2e": "playwright test"
   },
   "dependencies": {

@@ -141,7 +141,7 @@ Every run produces a structured lint report covering:
 - **Spacing scale** (8-pt grid adherence)
 - **Semantic HTML** (heading order, landmark elements, button-not-div)
 
-The lint is deterministic and free. It does not use VLM critique — see [`docs/research/09-adversarial-review-v2.md`](docs/research/09-adversarial-review-v2.md) for the rationale (circular evaluation, house-style contamination, and VisJudge-Bench correlation numbers).
+The lint is deterministic and free. It does not use VLM critique — see [`docs/research/vlm-critique-evaluation.md`](docs/research/vlm-critique-evaluation.md) for the rationale (correlation numbers, structural gap between deterministic checks and vision tasks).
 
 ---
 
@@ -154,7 +154,7 @@ The lint is deterministic and free. It does not use VLM critique — see [`docs/
 | [`docs/security/dependabot-status.md`](docs/security/dependabot-status.md) | Current Dependabot alert status and remediation history |
 | [`docs/adr/0001-byok-key-handling.md`](docs/adr/0001-byok-key-handling.md) | BYOK key lifecycle, encryption, memory handling, revocation |
 | [`docs/contributing/augmentation-system.md`](docs/contributing/augmentation-system.md) | How augmentations work, the three categories, how to add a new one |
-| [`docs/research/`](docs/research/) | Background research and design rationale for the architecture (10 documents, see `docs/research/README.md`) |
+| [`docs/research/vlm-critique-evaluation.md`](docs/research/vlm-critique-evaluation.md) | Why the lint engine uses deterministic checks instead of VLM critique (correlation numbers, structural gap) |
 
 ## Contributing
 
