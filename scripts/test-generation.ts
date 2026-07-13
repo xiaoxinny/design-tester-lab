@@ -191,6 +191,7 @@ async function main(): Promise<void> {
     generated_tokens_used: number;
     duration_ms: number;
     augmentation_stack: string;
+    lint_report: string | null;
   }>('SELECT * FROM runs WHERE id = ?', result.runId);
   if (!runRow) {
     fail_('run row created', 'no row');
@@ -229,6 +230,28 @@ async function main(): Promise<void> {
       fail_('run row stores augmentation stack', `got: ${runRow.augmentation_stack}`);
     } else {
       ok('run row stores augmentation stack', 'present');
+    }
+    // Verify the lint report was saved
+    const lintReportRaw = runRow.lint_report;
+    if (lintReportRaw === null || lintReportRaw === undefined) {
+      fail_('run row has lint_report', 'null');
+    } else if (typeof lintReportRaw !== 'string') {
+      fail_('lint_report is a JSON string', `got: ${typeof lintReportRaw}`);
+    } else {
+      try {
+        const parsed = JSON.parse(lintReportRaw) as { totalIssues: number; byRule: Record<string, number> };
+        // The generated HTML is '<div>hello</div>' -- which has no <html lang>
+        // and no <h1>, so we expect at least 2 semantic issues.
+        if (parsed.totalIssues < 1) {
+          fail_('lint_report has at least 1 issue', `got: ${parsed.totalIssues}`);
+        } else if (typeof parsed.byRule !== 'object' || parsed.byRule === null) {
+          fail_('lint_report has byRule object', `got: ${typeof parsed.byRule}`);
+        } else {
+          ok('lint_report saved and parseable', `${parsed.totalIssues} issues, ${Object.keys(parsed.byRule).length} rules`);
+        }
+      } catch (parseErr) {
+        fail_('lint_report is valid JSON', `error: ${parseErr}`);
+      }
     }
   }
 

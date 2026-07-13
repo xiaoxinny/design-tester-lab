@@ -159,7 +159,7 @@ export async function runGeneration(input: RunGenerationInput): Promise<RunGener
   }
 
   // 3. Call the provider.
-  let result;
+  let result: Awaited<ReturnType<typeof callProvider>>;
   try {
     result = await callProvider({
       provider: meta.provider,
@@ -209,7 +209,20 @@ export async function runGeneration(input: RunGenerationInput): Promise<RunGener
 
   const durationMs = Date.now() - start;
 
-  // 4. Save the successful run row, bump last_used_at, write audit log.
+  // 4. Run the deterministic lint on the generated HTML. Failures here
+  //    must not fail the run -- the user still gets their generation,
+  //    just with no lint report.
+  let lintReportJson: string | null = null;
+  try {
+    const { runLint } = await import('../lint/runner');
+    const lintReport = runLint(result.text);
+    lintReportJson = JSON.stringify(lintReport);
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error('[generation] lint failed:', e);
+  }
+
+  // 5. Save the successful run row, bump last_used_at, write audit log.
   //    All three in one DB transaction so partial failure does not leave
   //    a run row without a corresponding audit entry.
   const db = getDb();
@@ -226,7 +239,7 @@ export async function runGeneration(input: RunGenerationInput): Promise<RunGener
       inputTokens: result.usage.inputTokens,
       outputTokens: result.usage.outputTokens,
       durationMs,
-      lintReport: null,
+      lintReport: lintReportJson,
     });
     touchCredentialInternal(input.modelCredentialId, input.userId);
   });
@@ -282,10 +295,21 @@ interface SaveRunRowInput {
   inputTokens: number;
   outputTokens: number;
   durationMs: number;
-  lintReport: { error: string; status: number } | null;
+  /** JSON-encoded lint report (string), or a {error, status} object for the
+   * failure path. null means no lint was run. */
+  lintReport: string | { error: string; status: number } | null;
 }
 
 function saveRunRowInternal(input: SaveRunRowInput): void {
+  // lintReport is already a JSON-encoded string when set by the success
+  // path, or an object on the failure path. The DB column is TEXT; we
+  // store either a string as-is or stringify the failure object once.
+  const lintReportColumn: string | null =
+    input.lintReport === null
+      ? null
+      : typeof input.lintReport === 'string'
+        ? input.lintReport
+        : JSON.stringify(input.lintReport);
   getDb()
     .prepare(
       `INSERT INTO runs
@@ -306,7 +330,7 @@ function saveRunRowInternal(input: SaveRunRowInput): void {
       input.generatedHtml,
       input.inputTokens + input.outputTokens,
       input.durationMs,
-      input.lintReport === null ? null : JSON.stringify(input.lintReport),
+      lintReportColumn,
     );
 }
 
