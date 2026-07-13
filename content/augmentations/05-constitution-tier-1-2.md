@@ -4,7 +4,7 @@ version: 1.0.0
 name: Constitution (Tier 1 + Tier 2)
 description: Codified hard + structural design rules — WCAG 2.2 AA, 8pt grid, type scale, semantic HTML. The "minimum competent UI" rubric. Layer on top of any tokens augmentation.
 category: principles
-license: CC BY 4.0
+license: CC-BY-4.0
 source: internal://design-knowledge-mcp/principles
 conflicts_with: [constitution-full]
 requires: []

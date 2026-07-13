@@ -68,7 +68,7 @@ pnpm install
 cp .env.example .env
 # Edit .env and fill the Local mode section:
 #   LOCAL_DEFAULT_USER_EMAIL=you@home.local
-#   LOCAL_DEFAULT_USER_PASSWORD=<12+ chars, your choice>
+#   LOCAL_DEFAULT_USER_PASSWORD=*** chars minimum; 12+ recommended
 
 pnpm db:push   # creates the SQLite schema
 pnpm db:seed   # seeds the 8 augmentations
@@ -90,9 +90,10 @@ Recovery codes and email reset live in Supabase Cloud mode.
 
 1. Create a Supabase Cloud project (free tier)
 2. Apply `drizzle/0000_smooth_blue_blade.sql` to it
-3. Fill in the Supabase section of `.env`
-4. Restart the app
-5. Sign up in the Supabase Auth flow
+3. Seed the 8 augmentations: `pnpm db:seed:supabase`
+4. Fill in the Supabase section of `.env`
+5. Restart the app
+6. Sign up in the Supabase Auth flow
 
 ## Architecture
 

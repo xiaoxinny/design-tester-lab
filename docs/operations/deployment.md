@@ -52,11 +52,11 @@ For external access: use Tailscale (recommended) or Cloudflare Tunnel (more setu
 # Daily
 sqlite3 data/design-tester-lab.db ".backup '/backup/design-tester-lab-$(date +%F).db'"
 
-# Or with sqlite3's CLI:
-sqlite3 data/design-tester-lab.db < backup.sql
-```
+# Or dump as SQL (portable, human-readable):
+sqlite3 data/design-tester-lab.db .dump > backup.sql
 
-Restore: replace `data/design-tester-lab.db` with the backup.
+Restore: replace `data/design-tester-lab.db` with the backup, or:
+sqlite3 data/design-tester-lab.db < backup.sql
 
 ### Backup the .env
 
