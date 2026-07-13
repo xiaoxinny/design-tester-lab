@@ -41,7 +41,11 @@ export function runContrast(doc: ParsedDocument): LintIssue[] {
     const fontSize = parseFontSizePx(parsed.fontSize);
     const isLarge = fontSize !== null && fontSize >= LARGE_PX;
     const threshold = isLarge ? AA_LARGE : AA_NORMAL;
-    if (ratio + 0.05 < threshold) { // 0.05 is a small tolerance for rounding
+    // No tolerance. WCAG's formula is exact: (L1 + 0.05) / (L2 + 0.05). The
+    // 0.05 in the formula is a luminance offset, not a pass/fail tolerance.
+    // A borderline ratio like 4.49 must fail. Allowing a tolerance would
+    // produce false AA passes.
+    if (ratio < threshold) {
       issues.push({
         rule: 'contrast.low-ratio',
         severity: isLarge ? 'warning' : 'error',

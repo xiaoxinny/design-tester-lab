@@ -60,7 +60,10 @@ export function runSemantic(doc: ParsedDocument): LintIssue[] {
 
   // === Heading hierarchy ===
   //   - exactly one h1 (warning if more, error if zero)
-  //   - no level skips: h1 -> h2 is fine, h1 -> h3 is not
+  //   - no level skips forward: h1 -> h2 is fine, h1 -> h3 is not
+  //   - no level jumps backward: h6 -> h2 (jumping back past intermediate
+  //     levels) is also flagged. Going back by exactly one level (h3 -> h2)
+  //     is fine.
   let h1Count = 0;
   let lastLevel = 0;
   for (const el of doc.elements) {
@@ -68,14 +71,24 @@ export function runSemantic(doc: ParsedDocument): LintIssue[] {
     if (!m) continue;
     const level = Number(m[1]);
     if (level === 1) h1Count++;
-    if (lastLevel > 0 && level > lastLevel + 1) {
-      issues.push({
-        rule: 'semantic.heading-skip',
-        severity: 'warning',
-        message: `Heading level skipped: <h${lastLevel}> -> <h${level}> (gap of ${level - lastLevel - 1})`,
-        evidence: evidence(el),
-        tag: el.tag,
-      });
+    if (lastLevel > 0) {
+      if (level > lastLevel + 1) {
+        issues.push({
+          rule: 'semantic.heading-skip',
+          severity: 'warning',
+          message: `Heading level skipped: <h${lastLevel}> -> <h${level}> (gap of ${level - lastLevel - 1})`,
+          evidence: evidence(el),
+          tag: el.tag,
+        });
+      } else if (level < lastLevel - 1) {
+        issues.push({
+          rule: 'semantic.heading-jump-back',
+          severity: 'warning',
+          message: `Heading jumps back too far: <h${lastLevel}> -> <h${level}> (gap of ${lastLevel - level - 1})`,
+          evidence: evidence(el),
+          tag: el.tag,
+        });
+      }
     }
     lastLevel = level;
   }

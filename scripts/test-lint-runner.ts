@@ -16,6 +16,25 @@ function fail_(label: string, detail: string): void {
   fail++;
 }
 
+function expectIssue(label: string, html: string, rule: string): void {
+  const issues = runLint(html).issues;
+  const found = issues.find((i) => i.rule === rule);
+  if (!found) {
+    fail_(label, `expected ${rule} but got: ${issues.map((i) => i.rule).join(',') || '(none)'}`);
+  } else {
+    ok(label, found.message);
+  }
+}
+
+function expectNoIssue(label: string, html: string, rule: string): void {
+  const issues = runLint(html).issues;
+  if (issues.find((i) => i.rule === rule)) {
+    fail_(label, `expected no ${rule} but got: ${issues.find((i) => i.rule === rule)!.message}`);
+  } else {
+    ok(label, 'no ' + rule);
+  }
+}
+
 function main(): void {
   // === Empty input ===
 
@@ -30,6 +49,47 @@ function main(): void {
     ok('empty input only produces the html-lang + no-h1 issues', `${empty.totalIssues}`);
   } else {
     fail_('empty input only produces the html-lang + no-h1 issues', `${empty.issues.map((i) => i.rule).join(',')}`);
+  }
+
+  // === runLint is total ===
+
+  // Pathological inputs must not throw. They produce a report with a
+  // lint-internal-error issue if parsing fails, or a normal report if
+  // the parse succeeds but rules find no issues.
+  let threw = false;
+  try {
+    const r = runLint('<><><>< broken html');
+    if (!r) {
+      fail_('runLint on broken HTML returns a report', 'undefined');
+    } else {
+      ok('runLint on broken HTML returns a report', `${r.totalIssues} issues`);
+    }
+  } catch (e) {
+    threw = true;
+    fail_('runLint on broken HTML does not throw', `threw: ${e instanceof Error ? e.message : String(e)}`);
+  }
+  if (threw) ok('runLint on broken HTML does not throw', 'no-throw');
+
+  // === Heading jump-back ===
+
+  expectIssue('h6 -> h2 jump-back flags',
+    '<html><body><h1></h1><h6></h6><h2></h2></body></html>',
+    'semantic.heading-jump-back');
+  expectNoIssue('h3 -> h2 (one level back) does not flag',
+    '<html><body><h1></h1><h3></h3><h2></h2></body></html>',
+    'semantic.heading-jump-back');
+
+  // === Total rule count baseline ===
+
+  const allRules = new Set<string>();
+  for (const issue of empty.issues) allRules.add(issue.rule);
+  for (const issue of runLint('<html><body><img src="x.png"></body></html>').issues) allRules.add(issue.rule);
+  for (const issue of runLint('<html><body><h1></h1><h6></h6><h2></h2></body></html>').issues) allRules.add(issue.rule);
+  // We expect at least semantic.html-lang, semantic.no-h1, semantic.img-alt, semantic.heading-jump-back
+  if (allRules.size < 4) {
+    fail_('four rule ids across the tests', `got: ${[...allRules].join(',')}`);
+  } else {
+    ok('four rule ids across the tests', `${allRules.size}`);
   }
 
   // === Clean input passes ===

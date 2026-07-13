@@ -181,3 +181,17 @@ Compare augmentation outputs by visual inspection. A programmatic A/B harness is
 The generation runner (`src/lib/generation/runner.ts`) reads a stack like `[{id: 'shadcn-tokens', version: '1.0.0'}, {id: 'constitution-tier-1-2', version: '1.0.0'}]` and resolves it through `src/lib/augmentations/apply-stack.ts`. The resolver does one `SELECT` against the `augmentations` table to fetch all rows, then concatenates their `system_prompt` fields in the order they appear in the stack (the SQL `WHERE (id=?,version=?) OR ...` is not ordered, so the resolver rebuilds order from the input array). The concatenated text is what the runner sends to the model as the `system` field.
 
 Stack validation (conflicts / requires) is a separate concern. The resolver does not enforce it; the UI picker is expected to validate before calling. If the resolver finds an id that no longer exists in the table (e.g. a seed was rolled back), it throws a 400 and the runner does not save a run row.
+
+## How the lint engine works
+
+After a successful generation, the runner runs the deterministic lint engine (`src/lib/lint/runner.ts`) on the generated HTML and stores the JSON-encoded report in `runs.lint_report`. The engine has three rule modules:
+
+- `src/lib/lint/semantic.ts` — heading order, single h1, img alt, button-not-div, label-for, li-outside-list, multiple-main. Errors are WCAG 2.2 AA-related; warnings are hierarchy/maintenance.
+- `src/lib/lint/contrast.ts` — extracts `color` and `background-color` from inline `style` attributes and computes the WCAG 2.x contrast ratio. AA thresholds: 4.5:1 for normal text, 3.0:1 for >= 18px (large). No tolerance: a borderline ratio like 4.49 fails. Hex, rgb(), and 16 named colors are supported; currentColor / hsl() / var() are silently skipped.
+- `src/lib/lint/spacing.ts` — extracts `margin`, `padding`, `gap`, `row-gap`, `column-gap` from inline `style` attributes and checks 8-pt grid adherence. 0 is on-grid (collapse), sub-8px is off-grid. em / rem / pt are converted assuming 16px root.
+
+The engine operates on the source (inline styles + element types) — there is no layout engine, no jsdom, no computed styles. CSS classes and `<style>` blocks are out of scope for these rule modules. Adding class-based rule coverage is future work.
+
+A rule module fires an issue with a stable rule id (`semantic.heading-skip`, `contrast.low-ratio`, `spacing.off-grid`). The runner aggregates them into a `LintReport` with `issues`, `bySeverity`, `byRule`, `ranAt`, `inputBytes`. `isLintPass(report)` returns whether there are no error-severity issues.
+
+`runLint` is total: an internal error (e.g. on a parse5 failure) is converted into a `lint-internal-error` issue rather than thrown, so the generation runner can always save a report row.

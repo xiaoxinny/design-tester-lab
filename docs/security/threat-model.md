@@ -74,6 +74,11 @@ The following are explicitly out of scope:
 | CRLF in env value | `scripts/test-env.ts` | ✅ |
 | Augmentation dangling refs | `pnpm db:seed` + visual inspection | ✅ |
 | FK constraints enforced | `PRAGMA foreign_keys = ON` in push.ts | ✅ |
+| Audit log row written on credential_used / decrypt-failed | `pnpm test:generation` (asserts `credential_used` audit row after a successful run) | ✅ |
+| Lint engine: semantic rules | `pnpm test:semantic` | ✅ 28 cases pass (heading order/skip/jump-back, html lang, img alt, button-not-div, label-for, li-outside-list, multiple-main) |
+| Lint engine: contrast rules (WCAG 2.x) | `pnpm test:contrast` | ✅ 17 cases pass (hex/rgb/named, AA normal + AA large, no tolerance) |
+| Lint engine: spacing rules (8-pt grid) | `pnpm test:spacing` | ✅ 23 cases pass (margin/padding/gap, em/rem/pt, multi-value) |
+| Lint engine: orchestrator is total | `pnpm test:lint-runner` | ✅ 17 cases pass (runLint never throws; internal errors become `lint-internal-error` issues) |
 
 ## Open questions (deferred)
 

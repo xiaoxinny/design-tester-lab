@@ -22,7 +22,7 @@ function runRules(html: string) {
 }
 
 function expectNoIssue(label: string, html: string, rule: string): void {
-  const issues = runRules(html);
+  const issues = runSemantic(parseHtml(html));
   if (issues.find((i) => i.rule === rule)) {
     fail_(label, `expected no ${rule} but got: ${issues.find((i) => i.rule === rule)!.message}`);
   } else {
@@ -31,7 +31,7 @@ function expectNoIssue(label: string, html: string, rule: string): void {
 }
 
 function expectIssue(label: string, html: string, rule: string): void {
-  const issues = runRules(html);
+  const issues = runSemantic(parseHtml(html));
   const found = issues.find((i) => i.rule === rule);
   if (!found) {
     fail_(label, `expected ${rule} but got: ${issues.map((i) => i.rule).join(',') || '(none)'}`);
@@ -51,6 +51,10 @@ function main(): void {
   expectIssue('h1 -> h3 skip flags semantic.heading-skip', '<html><body><h1>a</h1><h3>skip</h3></body></html>', 'semantic.heading-skip');
   expectNoIssue('h1 -> h2 is fine', '<html><body><h1>a</h1><h2>b</h2></body></html>', 'semantic.heading-skip');
   expectIssue('h2 -> h4 skip flags', '<html><body><h2>a</h2><h4>skip</h4></body></html>', 'semantic.heading-skip');
+
+  expectIssue('h6 -> h2 jump-back flags', '<html><body><h1></h1><h6></h6><h2></h2></body></html>', 'semantic.heading-jump-back');
+  expectNoIssue('h3 -> h2 (one back) is fine', '<html><body><h1></h1><h3></h3><h2></h2></body></html>', 'semantic.heading-jump-back');
+  expectNoIssue('h1 -> h2 -> h1 is fine (back to top)', '<html><body><h1></h1><h2></h2><h1></h1></body></html>', 'semantic.heading-jump-back');
 
   expectIssue('no h1 flags semantic.no-h1', '<html><body><h2>a</h2></body></html>', 'semantic.no-h1');
   expectNoIssue('one h1 does not flag no-h1', '<html><body><h1>a</h1></body></html>', 'semantic.no-h1');

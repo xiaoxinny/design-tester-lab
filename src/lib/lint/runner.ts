@@ -36,11 +36,41 @@ export interface LintOptions {
 /**
  * Run the lint engine on the given HTML and return a structured report.
  *
- * Always returns a report, even if the input is unparseable -- in that
- * case the html-parser may produce a partial AST, and the rules run on
- * what they can find. The function never throws.
+ * Always returns a report, even if the input is unparseable or the rules
+ * throw on pathological input. Internal errors are converted to a single
+ * `lint-internal-error` issue with severity=error, so the generation runner
+ * can still save a report row and the user gets a useful diagnostic.
  */
 export function runLint(html: string, options: LintOptions = {}): LintReport {
+  const baseReport = (issue?: LintIssue): LintReport => {
+    const issues = issue ? [issue] : [];
+    const byRule: Record<string, number> = {};
+    if (issue) byRule[issue.rule] = 1;
+    return {
+      totalIssues: issues.length,
+      bySeverity: { error: issue?.severity === 'error' ? 1 : 0, warning: issue?.severity === 'warning' ? 1 : 0 },
+      byRule,
+      issues,
+      ranAt: Date.now(),
+      inputBytes: html.length,
+    };
+  };
+  try {
+    return runLintImpl(html, options);
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error('[lint] runLint threw:', e);
+    return baseReport({
+      rule: 'lint-internal-error',
+      severity: 'error',
+      message: `Lint engine threw: ${e instanceof Error ? e.message : String(e)}`,
+      evidence: html.length > 200 ? html.slice(0, 200) + '...' : html,
+      tag: '',
+    });
+  }
+}
+
+function runLintImpl(html: string, options: LintOptions): LintReport {
   const include = options.include ?? ['semantic', 'contrast', 'spacing'];
   const doc = parseHtml(html);
   const issues: LintIssue[] = [];
