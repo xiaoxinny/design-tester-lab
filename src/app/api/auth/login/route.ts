@@ -7,10 +7,16 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { handleLogin, AuthHandlerError } from '@/lib/auth-handlers';
+import { applyRateLimit } from '@/lib/rate-limit-http';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  // Rate limit by client IP. The threat model assumes the app is behind a
+  // reverse proxy that sets x-forwarded-for. Without that, all requests
+  // share the 'unknown' bucket and the limit applies globally.
+  const limited = applyRateLimit(req, 'auth.login');
+  if (limited) return limited;
   let body: unknown;
   try {
     body = await req.json();

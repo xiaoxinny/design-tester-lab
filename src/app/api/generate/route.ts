@@ -26,6 +26,7 @@ import { z } from 'zod';
 import { runGeneration, GenerationError } from '@/lib/generation/runner';
 import { resolveEnv } from '@/lib/env';
 import { requireUser } from '@/lib/auth-guard';
+import { applyRateLimit } from '@/lib/rate-limit-http';
 
 export const dynamic = 'force-dynamic';
 
@@ -87,6 +88,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
     throw e;
   }
+  // Per-user rate limit on the most expensive route. 10/minute default
+  // -- a real user generates, reviews, generates, reviews. Higher than
+  // that and they're either scripting or compromised.
+  const limited = applyRateLimit(req, 'generate', userId);
+  if (limited) return limited;
 
   try {
     const result = await runGeneration({

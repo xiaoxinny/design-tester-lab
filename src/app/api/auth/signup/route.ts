@@ -10,10 +10,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { handleSignup, AuthHandlerError } from '@/lib/auth-handlers';
 import { resolveEnv } from '@/lib/env';
 import { getDb } from '@/db/client';
+import { applyRateLimit } from '@/lib/rate-limit-http';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  // Per-IP rate limit. Signup is the gate to spam accounts; the limit
+  // is much stricter than login (5/hour vs 5/minute).
+  const limited = applyRateLimit(req, 'auth.signup');
+  if (limited) return limited;
   let body: unknown;
   try {
     body = await req.json();

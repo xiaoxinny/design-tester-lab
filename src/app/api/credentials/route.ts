@@ -13,6 +13,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { handleAddCredential, handleListCredentials, CredentialsHandlerError } from '@/lib/credentials-handlers';
 import { requireUser } from '@/lib/auth-guard';
 import { resolveEnv } from '@/lib/env';
+import { applyRateLimit } from '@/lib/rate-limit-http';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,6 +33,19 @@ function getAuthedUserId(req: NextRequest): string {
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  // Auth first so the per-user rate limit is keyed on the userId, not
+  // the IP. Auth failures (401) don't consume a token.
+  let userId: string;
+  try {
+    userId = getAuthedUserId(req);
+  } catch (e) {
+    if (e instanceof CredentialsHandlerError) {
+      return NextResponse.json({ error: e.message }, { status: e.statusCode });
+    }
+    throw e;
+  }
+  const limited = applyRateLimit(req, 'credentials.write', userId);
+  if (limited) return limited;
   let body: unknown;
   try {
     body = await req.json();
@@ -39,7 +53,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'invalid JSON body' }, { status: 400 });
   }
   try {
-    const userId = getAuthedUserId(req);
     const credential = await handleAddCredential(userId, body);
     return NextResponse.json({ credential }, { status: 201 });
   } catch (e) {
@@ -53,6 +66,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 export async function GET(req: NextRequest): Promise<NextResponse> {
   try {
     const userId = getAuthedUserId(req);
+    const limited = applyRateLimit(req, 'credentials.read', userId);
+    if (limited) return limited;
     const result = handleListCredentials(userId);
     return NextResponse.json(result, { status: 200 });
   } catch (e) {

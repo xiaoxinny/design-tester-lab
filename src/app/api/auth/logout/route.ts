@@ -7,10 +7,15 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { handleLogout } from '@/lib/auth-handlers';
+import { applyRateLimit } from '@/lib/rate-limit-http';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  // Logout is per-IP (no auth at this point in many cases). 30/min is
+  // generous for a legit client and stops a logout-loop attack.
+  const limited = applyRateLimit(req, 'auth.logout');
+  if (limited) return limited;
   const cookieHeader = req.headers.get('cookie');
   const result = handleLogout(cookieHeader, {
     secure: process.env.NODE_ENV === 'production',

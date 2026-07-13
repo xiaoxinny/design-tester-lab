@@ -90,6 +90,10 @@ export interface ResolvedEnv {
   // Optional
   authDisabled: boolean;
   logLevel: 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
+  /** Default bucket capacity for the rate limiter (also configurable per-route). */
+  rateLimitCapacity: number;
+  /** Default refill rate for the rate limiter (tokens per second). */
+  rateLimitRefillPerSec: number;
 }
 
 export function isSupabaseMode(env: NodeJS.ProcessEnv = process.env): boolean {
@@ -175,6 +179,8 @@ export function resolveEnv(env: NodeJS.ProcessEnv = process.env): ResolvedEnv {
       local: null,
       authDisabled,
       logLevel: (readEnv('LOG_LEVEL', env) as ResolvedEnv['logLevel']) ?? 'info',
+      rateLimitCapacity: parseIntPositive(readEnv('RATE_LIMIT_CAPACITY', env) ?? '60', env, 'RATE_LIMIT_CAPACITY'),
+      rateLimitRefillPerSec: parseNumberPositive(readEnv('RATE_LIMIT_REFILL_PER_SEC', env) ?? '1', env, 'RATE_LIMIT_REFILL_PER_SEC'),
     };
   }
 
@@ -215,7 +221,25 @@ export function resolveEnv(env: NodeJS.ProcessEnv = process.env): ResolvedEnv {
     },
     authDisabled,
     logLevel: (readEnv('LOG_LEVEL', env) as ResolvedEnv['logLevel']) ?? 'info',
+    rateLimitCapacity: parseIntPositive(readEnv('RATE_LIMIT_CAPACITY', env) ?? '60', env, 'RATE_LIMIT_CAPACITY'),
+    rateLimitRefillPerSec: parseNumberPositive(readEnv('RATE_LIMIT_REFILL_PER_SEC', env) ?? '1', env, 'RATE_LIMIT_REFILL_PER_SEC'),
   };
+}
+
+function parseIntPositive(value: string, env: NodeJS.ProcessEnv, name: string): number {
+  const n = parseInt(value, 10);
+  if (Number.isNaN(n) || n < 1) {
+    throw new EnvValidationError(`${name} must be a positive integer (got: "${value}")`);
+  }
+  return n;
+}
+
+function parseNumberPositive(value: string, env: NodeJS.ProcessEnv, name: string): number {
+  const n = Number(value);
+  if (Number.isNaN(n) || n < 0) {
+    throw new EnvValidationError(`${name} must be a non-negative number (got: "${value}")`);
+  }
+  return n;
 }
 
 /**
