@@ -16,7 +16,7 @@ description: ...      # one-paragraph summary of what this augmentation does
 category: tokens      # tokens | principles | behavior
 license: MIT          # SPDX identifier
 source: https://...   # URL where this augmentation's content came from
-conflicts_with: []    # list of augmentation IDs that cannot coexist with this one
+conflicts_with: []    # list of augmentation IDs that conflict with this one
 requires: []          # list of augmentation IDs that must be present when this one is used
 ---
 

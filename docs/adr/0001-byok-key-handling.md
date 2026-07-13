@@ -7,7 +7,7 @@
 
 ## Context
 
-design-tester-lab lets users evaluate AI models on UI generation. Each user brings their own API keys (Anthropic, OpenAI, Google, OpenRouter, Ollama, MiniMax-M3, etc.) — the app never has its own model account. This makes BYOK (Bring Your Own Key) the project's central trust contract.
+design-tester-lab lets users evaluate AI models on UI generation. Each user brings their own API keys (Anthropic, OpenAI, Google, OpenRouter, Ollama, etc.) — the app never has its own model account. This makes BYOK (Bring Your Own Key) the project's central trust contract.
 
 The question: where do user-supplied keys live, in what form, and under what threat model?
 
@@ -18,7 +18,7 @@ The question: where do user-supplied keys live, in what form, and under what thr
 **In-memory only by default. Optional encrypted-at-rest fallback.**
 
 - **Default (in-memory):** The user's API key is decrypted from the `model_credentials.encrypted_key` field at the moment a generation is initiated, held in process memory for the duration of that one call, and discarded when the response stream closes. Never written to logs, never serialized, never returned to the client after initial save.
-- **Optional (per-session prompt):** A "high-value account" flag that prompts for the key per-session rather than storing it. Removes the at-rest encryption problem entirely at the cost of UX.
+- **Optional (per-session prompt):** A "high-value account" flag that prompts for the key per-session rather than storing it. Eliminates the at-rest encryption problem at the cost of UX.
 
 ### Encryption (at-rest fallback)
 
@@ -40,7 +40,7 @@ When the user saves a key via the BYOK form:
 
 - HTTPS only (enforced at the reverse-proxy / Cloudflare Tunnel layer; the app itself is HTTP and assumes TLS termination upstream)
 - Keys are POSTed once during the BYOK setup flow and never returned to the client
-- Server-side proxy: the app calls the model provider from the server, **never from the browser**. This is a hard architectural choice because browser-side calls would expose the key in DevTools.
+- Server-side proxy: the app calls the model provider from the server, **never from the browser**. This is a hard architectural choice because browser-side calls expose the key in DevTools.
 
 ### Revocation
 
@@ -51,7 +51,7 @@ When the user saves a key via the BYOK form:
 
 ### Alternatives considered
 
-- **Client-side direct calls to model providers.** Would expose the key in browser DevTools.
+- **Client-side direct calls to model providers.** Exposes the key in browser DevTools.
 - **Storing keys in plaintext on disk.** A single disk-encryption layer away from compromise.
 - **Reversible encryption (deterministic IVs).** Defeats the point of encryption.
 - **Sharing keys across users.** No multi-tenant key pooling. Each user's keys are theirs alone.
@@ -74,7 +74,7 @@ To verify the BYOK path is correctly implemented, check:
 
 - `src/lib/crypto.ts` uses `crypto.createCipheriv('aes-256-gcm', key, iv)` with a fresh IV per encrypt
 - AAD parameter is set to `Buffer.from(`${userId}:${credentialId}`)` (or equivalent) on both encrypt and decrypt
-- The logger has a `redact` hook that scrubs the four provider-key patterns above
+- The logger has a `redact` hook that scrubs the four provider-key patterns listed in this section
 - `db:verify` includes a roundtrip test: encrypt a known string, decrypt it, assert deep-equal
 - A negative test: encrypt a credential, modify one byte of the ciphertext, expect decrypt to throw
 

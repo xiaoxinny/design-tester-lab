@@ -115,7 +115,7 @@ Augmentations are layered and composable. Users pick from three categories:
 
 Each augmentation is a YAML file in `content/augmentations/` with provenance (source URL and license). To add a new one, open a pull request — see [`docs/contributing/augmentation-system.md`](docs/contributing/augmentation-system.md).
 
-Conflict detection ensures users cannot pick incompatible combinations (for example, `shadcn-tokens` and `m3-tokens` together). Behavior augmentations are mutually exclusive (the two critique loops run independently; the picker leaves them unstacked).
+Conflict detection blocks incompatible combinations (for example, `shadcn-tokens` and `m3-tokens` together). Behavior augmentations are mutually exclusive (the two critique loops run independently; the picker leaves them unstacked).
 
 ## The 8 augmentations
 
@@ -153,9 +153,7 @@ The lint is deterministic and free. It does not use VLM critique — see [`docs/
 | [`docs/security/dependabot-status.md`](docs/security/dependabot-status.md) | Current Dependabot alert status and remediation history |
 | [`docs/adr/0001-byok-key-handling.md`](docs/adr/0001-byok-key-handling.md) | BYOK key lifecycle, encryption, memory handling, revocation |
 | [`docs/contributing/augmentation-system.md`](docs/contributing/augmentation-system.md) | How augmentations work, the three categories, how to add a new one |
-| [`docs/research/`](docs/research/) | Background research that informed the architecture (10 documents, see `docs/research/README.md`) |
-| [`docs/REVIEW-glm-5.2-2026-07-13.md`](docs/REVIEW-glm-5.2-2026-07-13.md) | GLM-5.2 architectural review of the original docs |
-| [`docs/REVIEW-glm-code-2026-07-13.md`](docs/REVIEW-glm-code-2026-07-13.md) | GLM-5.2 code review of the implementation |
+| [`docs/research/`](docs/research/) | Background research and design rationale for the architecture (10 documents, see `docs/research/README.md`) |
 
 ## Contributing
 

@@ -9,7 +9,7 @@
 |---|---|---|
 | Disk theft / backup leak | AES-256-GCM encryption at rest, key from env | Key-version column enables rotation; if `ENCRYPTION_KEY` leaks, all credentials are compromised. Mitigate via HSM-backed env in production. |
 | Process memory dump | No mitigation possible at the OS level | Inherent to any BYOK system. Acceptable. |
-| Logger leak | Stack-trace scrubber redacts 4 provider-key patterns | Added provider = added pattern; missing-pattern leak possible |
+| Logger leak | Stack-trace scrubber redacts 4 provider-key patterns | Each new provider requires an additional pattern; missing-pattern leak possible |
 | Backup / DB export | SQLite is single-file, hard to subset exfiltrate | Acceptable |
 | `/proc/<pid>/environ` read | Same-user-only on Linux | Acceptable for single-user local mode |
 
@@ -17,8 +17,8 @@
 
 | Threat | Mitigation | Residual risk |
 |---|---|---|
-| Credential stuffing (online) | Argon2id hashing (~150-300ms per attempt) | Login throttling is not implemented |
-| Session cookie theft | HttpOnly + SameSite=Lax cookies | CSRF protection is not implemented |
+| Credential stuffing (online) | Argon2id hashing (~150-300ms per attempt) | Login throttling is unimplemented |
+| Session cookie theft | HttpOnly + SameSite=Lax cookies | CSRF protection is unimplemented |
 | `AUTH_DISABLED` + public bind | Boot-time guard refuses non-loopback bind unless explicit ack | Tunnel/sidecar bypass is documented risk; out of scope to detect |
 | Password reset via forgotten env | Documented: read the bootstrap password from `.env`, or wipe DB | Single-user local mode only; not relevant in Supabase mode |
 | ENCRYPTION_KEY == SESSION_SECRET | Equality check at boot; app refuses to start | Crypto separation enforces assumption |
@@ -65,8 +65,8 @@ The following are explicitly out of scope:
 
 | Threat | Test | Status |
 |---|---|---|
-| BYOK roundtrip | `scripts/test-crypto.ts` (not implemented) | — |
-| Logger redaction | `scripts/test-logger-redaction.ts` (not implemented) | — |
+| BYOK roundtrip | `scripts/test-crypto.ts` (unimplemented) | — |
+| Logger redaction | `scripts/test-logger-redaction.ts` (unimplemented) | — |
 | AUTH_DISABLED guard | `scripts/test-env.ts` | ✅ 14 cases pass |
 | ENCRYPTION_KEY size | `scripts/test-env.ts` | ✅ |
 | ENCRYPTION_KEY != SESSION_SECRET | `scripts/test-env.ts` | ✅ |
@@ -76,7 +76,7 @@ The following are explicitly out of scope:
 
 ## Open questions (deferred)
 
-1. **Login throttling.** Nothing prevents rapid-fire login attempts. argon2id's ~200ms per attempt is the only rate limit. Add Express-rate-limit-style throttling on the API routes.
+1. **Login throttling.** Rapid-fire login attempts are unthrottled. argon2id's ~200ms per attempt is the only rate limit. Add Express-rate-limit-style throttling on the API routes.
 2. **CSRF tokens.** Cookie-based sessions without CSRF tokens are vulnerable to cross-site form submission. Add a `SameSite=Lax` cookie + origin-check on state-mutating requests.
 3. **HSTS / HTTPS-only flags.** The app is HTTP and assumes TLS at the reverse proxy. Add HSTS header for production deployments. Document in `docs/operations/deployment.md`.
 4. **Rate-limit BYOK vault endpoint.** A logged-in user who can write credentials can hammer the endpoint. Add per-user rate limit.
