@@ -37,12 +37,12 @@
     "better-sqlite3": "^11.7.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "diff": "^7.0.0",
-    "drizzle-orm": "^0.36.4",
+    "diff": "^8.0.3",
+    "drizzle-orm": "^0.45.2",
     "jose": "^5.9.6",
     "js-yaml": "^5.2.1",
     "lucide-react": "^0.469.0",
-    "next": "14.2.20",
+    "next": "15.5.18",
     "pino": "^9.5.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -66,7 +66,7 @@
     "tailwindcss-animate": "^1.0.7",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
-    "vitest": "^2.1.8"
+    "vitest": "^3.2.6"
   },
   "engines": {
     "node": ">=20.0.0"
