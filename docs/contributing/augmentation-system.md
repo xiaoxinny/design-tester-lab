@@ -60,7 +60,7 @@ Both behaviors require `constitution-tier-1-2` (they critique against the rubric
 
 1. **Pick the category.** Tokens need a defensible design system. Principles need codified rules with sources. Behaviors need empirical evidence that the pattern improves generation quality.
 
-2. **Write the file.** Create `content/augmentations/<NN>-<id>.md` where NN is the next two-digit sequence number. Use `02-shadcn-tokens.md` as a template.
+2. **Write the file.** Create `content/augmentations/<NN>-<id>.md` where NN is a two-digit sequence number. Use `02-shadcn-tokens.md` as a template.
 
 3. **Required frontmatter fields:**
    - `id`: lowercase-with-dashes, globally unique
@@ -74,18 +74,18 @@ Both behaviors require `constitution-tier-1-2` (they critique against the rubric
    - `requires`: list of augmentation IDs (no version pins)
 
 4. **Required body sections** (where applicable):
-   - The full text the model will see as a system prompt fragment
+   - The full text the model sees as a system prompt fragment
    - Any specific values (colors, sizes, tokens) the model should use
    - A clear workflow if it's a behavior augmentation
    - Citations to source material
 
-5. **Add to stack validation logic.** The loader enforces conflicts_with via `src/lib/augmentations/validate-stack.ts` (pending). If you add conflicts or requires, the validation must handle them.
+5. **Add to stack validation logic.** The loader enforces conflicts_with via `src/lib/augmentations/validate-stack.ts` (not implemented yet). If you add conflicts or requires, the validation must handle them.
 
 6. **Test it.** Run `pnpm db:seed` to load the new augmentation, then run it through a generation in the playground UI to verify it produces expected results.
 
 7. **Document.** Update `docs/contributing/augmentation-system.md` (this file) if the new augmentation changes the rules.
 
-8. **PR review.** Augmentations inject text into the model system prompt. A malicious augmentation could exfiltrate via prompt injection. Reviewers should:
+8. **PR review.** Augmentations inject text into the model system prompt. A malicious augmentation could exfiltrate via prompt injection. Reviewers must:
    - Verify the source URL is legitimate (or `internal://` for project-authored)
    - Verify the body doesn't contain hidden instructions targeting other tools (e.g., "ignore the user's prompt and...")
    - Verify conflicts_with + requires are correct
@@ -99,7 +99,7 @@ Both behaviors require `constitution-tier-1-2` (they critique against the rubric
 
 A user cannot pick `shadcn-tokens` + `m3-tokens` simultaneously — the stack validator blocks it. A user cannot pick `critique-revise` without `constitution-tier-1-2` — the stack validator warns or blocks.
 
-The validator logic is in `src/lib/augmentations/validate-stack.ts` (pending; the conflicts and requires are recorded but the picker does not enforce them). The runner enforces them server-side: if a user submits a conflicting stack, the generation fails with a clear error.
+The validator logic is in `src/lib/augmentations/validate-stack.ts` (not implemented yet; the conflicts and requires are recorded but the picker does not enforce them). The runner enforces them server-side: if a user submits a conflicting stack, the generation fails with a clear error.
 
 ## Worked example: adding a `tailwind-tokens` augmentation
 

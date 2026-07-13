@@ -39,23 +39,23 @@ When the user saves a key via the BYOK form:
 ### Transport
 
 - HTTPS only (enforced at the reverse-proxy / Cloudflare Tunnel layer; the app itself is HTTP and assumes TLS termination upstream)
-- Keys are POSTed once during the BYOK setup flow and never sent to the client again
+- Keys are POSTed once during the BYOK setup flow and never returned to the client
 - Server-side proxy: the app calls the model provider from the server, **never from the browser**. This is a hard architectural choice because browser-side calls would expose the key in DevTools.
 
 ### Revocation
 
 - User can delete a credential at any time; the row is hard-deleted (no soft-delete)
 - Active generations using a deleted credential continue to completion (their model call is in-flight)
-- New generations using that credential fail with a clear "credential deleted" error
+- Subsequent generations using that credential fail with a clear "credential deleted" error
 - This matches AWS / GCP / Vercel credential-revocation UX
 
-### Alternatives considered and rejected
+### Alternatives considered
 
-- **Client-side direct calls to model providers.** Would expose the key in browser DevTools. Rejected.
-- **Storing keys in plaintext on disk.** Single-disk-encryption-away from compromise. Rejected.
-- **Reversible encryption (deterministic IVs).** Defeats the point of encryption. Rejected.
+- **Client-side direct calls to model providers.** Would expose the key in browser DevTools.
+- **Storing keys in plaintext on disk.** A single disk-encryption layer away from compromise.
+- **Reversible encryption (deterministic IVs).** Defeats the point of encryption.
 - **Sharing keys across users.** No multi-tenant key pooling. Each user's keys are theirs alone.
-- **Asking users to enter their key on every generation.** Friction, encourages writing down. Rejected for the default flow.
+- **Asking users to enter their key on every generation.** Friction, encourages writing down. Not adopted for the default flow.
 
 ## Consequences
 

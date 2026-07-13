@@ -79,20 +79,20 @@ Log in at `http://localhost:3030` with the email and password from `.env`.
 
 ### Password recovery in local mode
 
-In local mode, the bootstrap password lives in `.env`. If you change it through `/settings` and forget the new one, you have two recovery paths:
+In local mode, the bootstrap password lives in `.env`. If you change it through `/settings` and forget the changed password, you have two recovery paths:
 
-- **Read it from `.env`** — the env var persists from initial setup
+- **Read it from `.env`** — the env var persists from setup
 - **Wipe and start over** — `rm data/design-tester-lab.db && pnpm db:push && pnpm db:seed`, then log in with the `.env` password again
 
 Recovery codes and email reset live in Supabase Cloud mode.
 
-### Switching from local mode to Supabase Cloud
+### Moving between local mode and Supabase Cloud
 
 1. Create a Supabase Cloud project (free tier)
 2. Apply `docs/supabase-schema.sql` to it
 3. Fill in the Supabase section of `.env`
 4. Restart the app
-5. Sign up as a new user in the Supabase Auth flow
+5. Sign up in the Supabase Auth flow
 
 ## Architecture
 

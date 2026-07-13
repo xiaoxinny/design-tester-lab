@@ -1,9 +1,6 @@
 # Threat model
 
-**Status:** Living document. Update whenever a new attack surface is added.
-**Last reviewed:** 2026-07-13
-**Applies to:** design-tester-lab
-
+**Status:** Living document. Update when an attack surface is added.
 ## In-scope threats
 
 ### 1. Credential exposure (BYOK)
@@ -12,7 +9,7 @@
 |---|---|---|
 | Disk theft / backup leak | AES-256-GCM encryption at rest, key from env | Key-version column enables rotation; if `ENCRYPTION_KEY` leaks, all credentials are compromised. Mitigate via HSM-backed env in production. |
 | Process memory dump | No mitigation possible at the OS level | Inherent to any BYOK system. Acceptable. |
-| Logger leak | Stack-trace scrubber redacts 4 provider-key patterns | New provider = new pattern; missing-pattern leak possible |
+| Logger leak | Stack-trace scrubber redacts 4 provider-key patterns | Added provider = added pattern; missing-pattern leak possible |
 | Backup / DB export | SQLite is single-file, hard to subset exfiltrate | Acceptable |
 | `/proc/<pid>/environ` read | Same-user-only on Linux | Acceptable for single-user local mode |
 
@@ -20,8 +17,8 @@
 
 | Threat | Mitigation | Residual risk |
 |---|---|---|
-| Credential stuffing (online) | Argon2id hashing (~150-300ms per attempt) | Login throttling is pending |
-| Session cookie theft | HttpOnly + SameSite=Lax cookies | CSRF protection is pending |
+| Credential stuffing (online) | Argon2id hashing (~150-300ms per attempt) | Login throttling is not implemented |
+| Session cookie theft | HttpOnly + SameSite=Lax cookies | CSRF protection is not implemented |
 | `AUTH_DISABLED` + public bind | Boot-time guard refuses non-loopback bind unless explicit ack | Tunnel/sidecar bypass is documented risk; out of scope to detect |
 | Password reset via forgotten env | Documented: read the bootstrap password from `.env`, or wipe DB | Single-user local mode only; not relevant in Supabase mode |
 | ENCRYPTION_KEY == SESSION_SECRET | Equality check at boot; app refuses to start | Crypto separation enforces assumption |
@@ -43,16 +40,16 @@ The app's central feature is generating UI from model output. The model output i
 
 | Threat | Mitigation | Residual risk |
 |---|---|---|
-| SQLite file on shared filesystem | File mode 0600 (set by app on first run) | Default umask may not enforce; document |
+| SQLite file on shared filesystem | File mode 0600 (set by app on boot) | Default umask does not enforce; document |
 | `.env` file leak | Gitignored; documented as the password-recovery mechanism | If the host filesystem is compromised, attacker has both DB and key |
 | Untrusted model output rendered next to the user's credentials in the same browser tab | BYOK form is on a separate route from preview | Acceptable |
-
+| Untrusted augmentation YAML attempts prompt injection at the model | Augmentations are versioned; `published=false` hides them; reviewer must opt in. The loader enforces a strict frontmatter schema and rejects unknown fields. | Acceptable |
 ### 5. Supply chain
 
 | Threat | Mitigation | Residual risk |
 |---|---|---|
-| Compromised npm package | `pnpm-lock.yaml` committed; pinned versions; npm audit on CI | New CVEs in existing packages require patch |
-| Compromised augmentation YAML (e.g., via repo PR) | Augmentations are app-controlled; PR review required | Augmentations inject content into model system prompt; a malicious one could exfiltrate via prompt injection. Mitigated: augmentations are versioned; published=false hides them; reviewer must opt in. |
+| Compromised npm package | `pnpm-lock.yaml` committed; pinned versions; npm audit on CI | CVEs in dependency packages require patch |
+| Compromised augmentation YAML (e.g., via repo PR) | Augmentations are app-controlled; PR review required | Augmentations inject content into model system prompt; a malicious one can exfiltrate via prompt injection. Mitigation: augmentations are versioned; published=false hides them; reviewer must opt in. |
 | Compromised Drizzle migration | Migration is generated from schema, not hand-written; schema is in version control | Acceptable |
 
 ## Out-of-scope threats

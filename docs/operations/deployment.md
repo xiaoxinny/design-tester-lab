@@ -4,10 +4,10 @@ This document covers both storage modes and the recommended deployment patterns.
 
 ## Overview
 
-design-tester-lab is a Next.js 14 application with two storage modes:
+design-tester-lab is a Next.js application with two storage modes:
 
 - **Supabase Cloud mode** (default if Supabase env vars are set): Postgres + Auth + RLS in the cloud
-- **Local mode** (fallback): SQLite file, single user provisioned from `.env`
+- **Local mode** (when Supabase env vars are unset): SQLite file, single user provisioned from `.env`
 
 This guide covers both modes and the recommended deployment patterns.
 
