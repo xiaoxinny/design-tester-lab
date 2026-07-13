@@ -14,4 +14,4 @@ This repository is a Next.js application. Source code is in `src/`, augmentation
 | [`operations/`](operations/) | Deployment runbooks, env var references, disaster recovery | Operators, self-hosters |
 | [`security/`](security/) | Threat model, vulnerability status, security review checklist | Security reviewers, operators |
 | [`contributing/`](contributing/) | How the augmentation system works, how to add a new one | Augmentation authors, contributors |
-| [`research/`](research/) | Background research and design rationale for the architecture (10 documents, indexed by [`research/README.md`](research/README.md)) | Architects, curious readers |
+| [`research/`](research/) | A single document with the evidence-based rationale for the deterministic-lint decision | Architects, curious readers |

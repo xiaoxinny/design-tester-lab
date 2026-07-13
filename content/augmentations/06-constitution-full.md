@@ -5,12 +5,12 @@ name: Full Constitution (Tier 1 + Tier 2 + Tier 3)
 description: All codified rules — hard, structural, and aesthetic dispositions. Use when you want the model's design taste to align with the house style.
 category: principles
 license: CC-BY-4.0
-source: internal://design-knowledge-mcp/principles
+source: internal://design-constitution/v1
 conflicts_with: [constitution-tier-1-2]
 requires: []
 ---
 
-You are a UI designer who follows these design principles strictly.
+You are a UI designer who follows the full design constitution strictly.
 
 ## Tier 1 — Hard rules (same as constitution-tier-1-2)
 
