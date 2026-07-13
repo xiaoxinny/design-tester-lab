@@ -2,6 +2,10 @@
 
 User-facing documentation for design-tester-lab.
 
+## Scope and contents
+
+This repository is a Next.js 14 application. Source code is in `src/`, augmentation content is in `content/augmentations/`, schemas and migrations are in `src/db/` and `drizzle/`, and build configuration is at the repo root (`package.json`, `Dockerfile`, `tsconfig.json`, and so on).
+
 ## Top-level docs
 
 | File | Purpose |
@@ -17,12 +21,4 @@ User-facing documentation for design-tester-lab.
 | [`operations/`](operations/) | Deployment runbooks, env var references, disaster recovery | Operators, self-hosters |
 | [`security/`](security/) | Threat model, current vulnerability status, security review checklist | Security reviewers, operators |
 | [`contributing/`](contributing/) | How the augmentation system works, how to add a new one | Augmentation authors, contributors |
-| [`research/`](research/) | Background research that informed the architecture (10 documents + index) | Architects, curious users — not required reading |
-| `internal/` | (gitignored) Personal development artifacts; not for users | Repository maintainers only |
-
-## What is not here
-
-- **Source code** lives in `src/`
-- **Augmentation files** live in `content/augmentations/`
-- **Schemas and migrations** live in `src/db/` and `drizzle/`
-- **Build configuration** is at the repo root (`package.json`, `Dockerfile`, `tsconfig.json`, etc.)
+| [`research/`](research/) | Background research and design rationale for the architecture (10 documents, indexed by [`research/README.md`](research/README.md)) | Architects, curious readers |

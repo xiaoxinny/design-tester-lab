@@ -1,6 +1,6 @@
 # Contributing: the augmentation system
 
-**Status:** v1, applies to all 8 shipped augmentations + future ones.
+**Status:** Applies to all 8 shipped augmentations + future ones.
 **Audience:** Anyone adding or modifying augmentations.
 
 ## What an augmentation is
@@ -34,25 +34,23 @@ The markdown body is what gets injected into the model's system prompt. The YAML
 
 Token systems define the design-language primitives the model uses: colors, typography, spacing, components. Multiple token systems are mutually exclusive because they would contradict each other.
 
-v1 tokens:
+Tokens
 - `none` — baseline; no system prompt augmentation
 - `shadcn-tokens` — shadcn/ui design system
 - `m3-tokens` — Material Design 3
 - `better-design-default` — better-design multi-brand (default theme)
 
-### Principles (pick 0 or 1)
+### Principles
 
-Principles add codified design rules to the model's instructions: WCAG, type scale, semantic HTML, aesthetic dispositions. Picking more than one principle would result in contradictory rules.
+Pick zero or one. Principles add codified design rules to the model's instructions: WCAG, type scale, semantic HTML, aesthetic dispositions. Picking more than one principle would result in contradictory rules.
 
-v1 principles:
 - `constitution-tier-1-2` — hard rules + structural rules
 - `constitution-full` — hard rules + structural rules + aesthetic dispositions (the latter supersedes tier-1-2)
 
-### Behavior (pick 0 or 1, mutually exclusive)
+### Behavior
 
-Behavior augmentations modify HOW the model generates, not what it generates. They're mutually exclusive because both behaviors run an additional model call in a similar way and composing them doubles cost without clear benefit.
+Pick zero or one; the two are mutually exclusive. Behavior augmentations modify HOW the model generates, not what it generates. They're mutually exclusive because both behaviors run an additional model call in a similar way and composing them doubles cost without clear benefit.
 
-v1 behaviors:
 - `critique-revise` — generate, then model critiques its own output, then revises (Self-Refine, Madaan et al. 2023)
 - `lint-feedback` — generate, then run deterministic lint, inject lint output as feedback, model revises
 
@@ -81,7 +79,7 @@ Both behaviors require `constitution-tier-1-2` (they critique against the rubric
    - A clear workflow if it's a behavior augmentation
    - Citations to source material
 
-5. **Add to stack validation logic.** The loader enforces conflicts_with via `src/lib/augmentations/validate-stack.ts` (Day 3+). If you add conflicts or requires, the validation must handle them.
+5. **Add to stack validation logic.** The loader enforces conflicts_with via `src/lib/augmentations/validate-stack.ts` (pending). If you add conflicts or requires, the validation must handle them.
 
 6. **Test it.** Run `pnpm db:seed` to load the new augmentation, then run it through a generation in the playground UI to verify it produces expected results.
 
@@ -94,14 +92,14 @@ Both behaviors require `constitution-tier-1-2` (they critique against the rubric
 
 ## Conflict and requirement semantics
 
-`conflicts_with` and `requires` are **id-only** in v1 — they don't carry version pins. This is intentional:
+`conflicts_with` and `requires` are **id-only** — they don't carry version pins. This is intentional:
 
 - **Conflicts are categorical.** "Two token systems cannot coexist" is true across versions of either. Adding version pins would force every version bump to update the conflicts array.
-- **Requirements are categorical too** for v1. If a future behavior augmentation genuinely depends on a specific version of the constitution, we can add `(id, version)` tuples. Day 3+ decision.
+- **Requirements are categorical too.** If a future behavior augmentation genuinely depends on a specific version of the constitution, the schema can carry `(id, version)` tuples. Decision deferred.
 
 A user cannot pick `shadcn-tokens` + `m3-tokens` simultaneously — the stack validator blocks it. A user cannot pick `critique-revise` without `constitution-tier-1-2` — the stack validator warns or blocks.
 
-The validator's current logic is in `src/lib/augmentations/validate-stack.ts` (Day 3+ work; for now the conflicts and requires are recorded but not enforced at the picker). Until then, the runner enforces them server-side: if a user submits a conflicting stack, the generation fails with a clear error.
+The validator's current logic is in `src/lib/augmentations/validate-stack.ts` (pending; the conflicts and requires are recorded but the picker does not enforce them yet). The runner enforces them server-side: if a user submits a conflicting stack, the generation fails with a clear error.
 
 ## Worked example: adding a `tailwind-tokens` augmentation
 
@@ -158,7 +156,7 @@ Note: this is the same form as `02-shadcn-tokens.md`, `03-m3-tokens.md`, and `04
 - **Minor (1.x.0)**: substantive additions to the augmentation (new tokens, new components, new rules). Old versions stay in the DB unless explicitly removed.
 - **Major (x.0.0)**: breaking change in conflict or require semantics, or fundamental rewrite of the augmentation. The new version is published alongside the old; users opt in.
 
-When you bump a major version, you should also update the conflicts/requires of any augmentations that referenced the old version (rare, since v1 uses id-only refs).
+When you bump a major version, you should also update the conflicts/requires of any augmentations that referenced the old version (rare, since id-only refs are used).
 
 ## What augmentations do NOT do
 
@@ -176,4 +174,4 @@ When you bump a major version, you should also update the conflicts/requires of 
 3. Compare the two outputs side by side
 4. Run the deterministic lint on each — does your augmentation move the lint score?
 
-Day 3+ will add a programmatic A/B harness so you don't have to eyeball.
+A programmatic A/B harness is pending, so contributors eyeball outputs in the meantime.

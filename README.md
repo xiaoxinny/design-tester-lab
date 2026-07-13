@@ -22,7 +22,7 @@ A web application with the following flow:
 
 Existing AI design tools (v0, Claude Design, Figma Make, Bolt, Lovable) generate code but do not let you compare models, measure output against an objective rubric, or save comparison history. design-tester-lab fills that gap: it provides an open rubric (WCAG 2.2 AA, APCA, 8-pt grid, token consistency, semantic HTML) and lets you run any model against any prompt against that rubric.
 
-The project is not a design tool. It does not ship its own AI design opinions. It is a measurement harness.
+The project is a host for running augmentations. Augmentations supply the design opinions; the project supplies the execution surface.
 
 ---
 
@@ -94,10 +94,6 @@ No recovery codes, no email reset. If you want those, use Supabase Cloud mode.
 4. Restart the app
 5. Sign up as a new user in the Supabase Auth flow
 
-The SQLite database at `data/design-tester-lab.db` is no longer used.
-
----
-
 ## Architecture
 
 - **Next.js 14** (App Router, TypeScript, server components, server actions)
@@ -119,9 +115,9 @@ Augmentations are layered and composable. Users pick from three categories:
 
 Each augmentation is a YAML file in `content/augmentations/` with provenance (source URL and license). To add a new one, open a pull request — see [`docs/contributing/augmentation-system.md`](docs/contributing/augmentation-system.md).
 
-Conflict detection ensures users cannot pick incompatible combinations (for example, `shadcn-tokens` and `m3-tokens` together). Behavior augmentations are mutually exclusive (the two critique loops should not be stacked in v1).
+Conflict detection ensures users cannot pick incompatible combinations (for example, `shadcn-tokens` and `m3-tokens` together). Behavior augmentations are mutually exclusive (the two critique loops run independently; the picker does not stack them).
 
-## The 8 v1 augmentations
+## The 8 augmentations
 
 | ID | Category | Description |
 |---|---|---|

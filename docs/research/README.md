@@ -1,6 +1,6 @@
 # Research corpus
 
-> **Background research, not user-facing documentation.** This directory contains the design research that informed the project's architecture. It is not required reading for users of the tool. It is included in the public repository so the design decisions in the main docs are auditable and traceable.
+> Background research and design rationale. This directory contains the design research that informed the project's architecture. It is included in the public repository so the design decisions in the main docs are auditable and traceable.
 
 ## Index
 
@@ -12,9 +12,9 @@
 | 04 | `04-design-quality-rubric.md` | Survey of 13 academic benchmarks (AesBench, VisJudge-Bench, UICrit, etc.) plus composite DQS formula with 10 sub-scores | 28KB |
 | 05 | `05-ai-design-tools-gap-report.md` | Tool-by-tool gap analysis (v0, Bolt, Lovable, Claude Design, Figma Make, etc.) plus structured `comparison-matrix.json` | 24KB + 14KB |
 | 06 | `06-research-synthesis.md` | Consolidated research synthesis — 22-artifact taxonomy plus Constitution plus DQS plus AI tool gap | 39KB |
-| 07 | `07-synthesis-architecture-proposal.md` | Original v1 design synthesis, now superseded by the implementation in `src/` and the deployment guide in [`../operations/deployment.md`](../operations/deployment.md) | 35KB |
+| 07 | `07-synthesis-architecture-proposal.md` | Synthesis, superseded by the current implementation in `src/` and the deployment guide in [`../operations/deployment.md`](../operations/deployment.md) | 35KB |
 | 08 | `08-adversarial-review-v1.md` | First adversarial review of the v1 synthesis | 30KB |
-| 09 | `09-adversarial-review-v2.md` | Second, web-verified adversarial review — refuted 5 load-bearing claims, surfaced 3 concrete bugs, proposed Day-0 falsification experiment | 26KB |
+| 09 | `09-adversarial-review-v2.md` | Second, web-verified adversarial review — refuted 5 load-bearing claims, surfaced 3 concrete bugs, proposed a falsification experiment | 26KB |
 | 10 | `10-evaluation-brief.md` | The brief given to the adversarial reviewers | 8KB |
 | – | [`../REVIEW-glm-5.2-2026-07-13.md`](../REVIEW-glm-5.2-2026-07-13.md) | Single-model GLM-5.2 architectural review of the original docs | 13KB |
 | – | [`../REVIEW-glm-code-2026-07-13.md`](../REVIEW-glm-code-2026-07-13.md) | Single-model GLM-5.2 architectural review of the implementation code | 12KB |
@@ -27,6 +27,6 @@ If you are new to the project and want to understand *why* the architecture look
 2. [`../operations/deployment.md`](../operations/deployment.md) — the production deployment shape
 3. [`../adr/0001-byok-key-handling.md`](../adr/0001-byok-key-handling.md) — the BYOK contract that shapes the data model
 4. `06-research-synthesis.md` — the full research picture in one document
-5. `09-adversarial-review-v2.md` — what the previous design got wrong, and why we pivoted
+5. `09-adversarial-review-v2.md` — the design decisions that shaped the current approach
 
 The other files are supporting material — read them when you need a specific topic.

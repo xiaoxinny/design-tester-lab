@@ -74,7 +74,7 @@ Recommended for: shared use, multi-user, persistent data, public deployment.
 
 ### Requirements
 
-- A Supabase Cloud project (free tier is sufficient for v1)
+- A Supabase Cloud project (free tier is sufficient for the current feature set)
 - A Coolify / Dokploy / Railway / Render / Fly.io deployment target
 - A registered domain (optional but recommended for HTTPS)
 - Cloudflare Tunnel or reverse proxy for HTTPS
@@ -113,7 +113,7 @@ Coolify (recommended for self-hosted):
    SUPABASE_DB_URL=<connection string>
    NODE_ENV=production
    ```
-4. Mount a persistent volume at `/app/data` (for any future local-cache files; not strictly needed in Supabase mode but harmless)
+4. Mount a persistent volume at `/app/data` (for any future local-cache files; not strictly needed in Supabase mode)
 5. Add Cloudflare Tunnel or reverse proxy for HTTPS
 6. Deploy
 

@@ -1,8 +1,8 @@
 # Threat model
 
 **Status:** Living document. Update whenever a new attack surface is added.
-**Last reviewed:** 2026-07-13 (Day 1 + start of (B) auth scaffold)
-**Applies to:** design-tester-lab v0.1.x
+**Last reviewed:** 2026-07-13
+**Applies to:** design-tester-lab
 
 ## In-scope threats
 
@@ -20,8 +20,8 @@
 
 | Threat | Mitigation | Residual risk |
 |---|---|---|
-| Credential stuffing (online) | Argon2id hashing (~150-300ms per attempt) | Login throttling deferred to Day 2+ |
-| Session cookie theft | HttpOnly + SameSite=Lax cookies | CSRF protection deferred to Day 2 |
+| Credential stuffing (online) | Argon2id hashing (~150-300ms per attempt) | Login throttling is pending |
+| Session cookie theft | HttpOnly + SameSite=Lax cookies | CSRF protection is pending |
 | `AUTH_DISABLED` + public bind | Boot-time guard refuses non-loopback bind unless explicit ack | Tunnel/sidecar bypass is documented risk; out of scope to detect |
 | Password reset via forgotten env | Documented: read original password back from `.env`, or wipe DB | Single-user local mode only; not relevant in Supabase mode |
 | ENCRYPTION_KEY == SESSION_SECRET | Equality check at boot; app refuses to start | Crypto separation enforces assumption |
@@ -59,17 +59,17 @@ The app's central feature is generating UI from model output. The model output i
 
 The following are explicitly out of scope for v1:
 
-- **DDoS against the app itself.** v1 is single-tenant local; rate limiting is per-user, not anti-DDoS.
-- **Side-channel attacks on the model provider.** We don't run the models; we call providers. Their security is theirs.
-- **Coordinated multi-user attacks.** v1 local mode is single-user. Supabase Cloud mode uses Supabase's auth and is constrained by their security model.
+- **DDoS against the app itself.** The local mode is single-tenant; rate limiting is per-user, not anti-DDoS.
+- **Side-channel attacks on the model provider.** Model providers are called as a client; the project does not host them. Their security is theirs.
+- **Coordinated multi-user attacks.** Local mode is single-user. Supabase Cloud mode uses Supabase's auth and is constrained by their security model.
 - **Recovery from a fully-compromised host.** Out of scope; the threat model assumes the host OS is trustworthy.
 
 ## Verification matrix
 
 | Threat | Test | Status |
 |---|---|---|
-| BYOK roundtrip | `scripts/test-crypto.ts` (TODO Day 2) | — |
-| Logger redaction | `scripts/test-logger-redaction.ts` (TODO Day 2) | — |
+| BYOK roundtrip | `scripts/test-crypto.ts` (TODO) | — |
+| Logger redaction | `scripts/test-logger-redaction.ts` (TODO) | — |
 | AUTH_DISABLED guard | `scripts/test-env.ts` | ✅ 14 cases pass |
 | ENCRYPTION_KEY size | `scripts/test-env.ts` | ✅ |
 | ENCRYPTION_KEY != SESSION_SECRET | `scripts/test-env.ts` | ✅ |
@@ -79,11 +79,11 @@ The following are explicitly out of scope for v1:
 
 ## Open questions (deferred)
 
-1. **Login throttling.** Currently nothing prevents rapid-fire login attempts. argon2id's ~200ms per attempt is the only rate limit. Add Express-rate-limit-style throttling on Day 2+ when the API routes exist.
-2. **CSRF tokens.** Cookie-based sessions without CSRF tokens are vulnerable to cross-site form submission. Add a `SameSite=Lax` cookie + origin-check on state-mutating requests on Day 2+.
+1. **Login throttling.** Currently nothing prevents rapid-fire login attempts. argon2id's ~200ms per attempt is the only rate limit. Add Express-rate-limit-style throttling when the API routes exist.
+2. **CSRF tokens.** Cookie-based sessions without CSRF tokens are vulnerable to cross-site form submission. Add a `SameSite=Lax` cookie + origin-check on state-mutating requests.
 3. **HSTS / HTTPS-only flags.** The app is HTTP and assumes TLS at the reverse proxy. Add HSTS header when the app is in production. Document in `docs/operations/deployment.md`.
-4. **Rate-limit BYOK vault endpoint.** A logged-in user who can write credentials can hammer the endpoint. Add per-user rate limit on Day 2+.
-5. **Audit log.** Every credential read should be logged (without the key itself). Currently the schema has no audit log table. Day 3+.
+4. **Rate-limit BYOK vault endpoint.** A logged-in user who can write credentials can hammer the endpoint. Add per-user rate limit.
+5. **Audit log.** Every credential read should be logged (without the key itself). Currently the schema has no audit log table.
 6. **Argon2id cost parameters.** OWASP-min-A (m=19456) is fine for single-user local. For multi-tenant Supabase, raise to OWASP-min-B.
 
 ## References

@@ -32,7 +32,7 @@ When the user saves a key via the BYOK form:
 ### Memory handling
 
 - Process memory is the unavoidable risk surface for any BYOK system; this is not a defect
-- Node does not allow reliable zeroization, so we do **not** pretend to offer it
+- Node does not allow reliable zeroization; the absence of zeroization is not hidden behind claims of offering it.
 - The app **never logs the key**, never writes it to error reports, never includes it in crash dumps
 - Stack traces are scrubbed at the logger boundary to redact anything matching `sk-[A-Za-z0-9]{20,}` / `sk-ant-[A-Za-z0-9-]{20,}` / `AIza[0-9A-Za-z_-]{35}` / `gsk_[A-Za-z0-9]{20,}` patterns
 
@@ -49,7 +49,7 @@ When the user saves a key via the BYOK form:
 - New generations using that credential fail with a clear "credential deleted" error
 - This matches AWS / GCP / Vercel credential-revocation UX
 
-### What we explicitly rejected
+### Alternatives considered and rejected
 
 - **Client-side direct calls to model providers.** Would expose the key in browser DevTools. Rejected.
 - **Storing keys in plaintext on disk.** Single-disk-encryption-away from compromise. Rejected.
