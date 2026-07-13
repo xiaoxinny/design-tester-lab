@@ -6,7 +6,7 @@ description: Modern shadcn defaults — neutral palette, Geist/Inter font, 4px g
 category: tokens
 license: MIT
 source: https://ui.shadcn.com
-conflicts_with: [m3-tokens, better-design-default, tailwind-default]
+conflicts_with: [m3-tokens, better-design-default]
 requires: []
 ---
 

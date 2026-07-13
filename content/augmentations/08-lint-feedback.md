@@ -7,7 +7,7 @@ category: behavior
 license: MIT
 source: internal://design-knowledge-lab/lint-feedback
 conflicts_with: [critique-revise]
-requires: []
+requires: [constitution-tier-1-2]
 ---
 
 You are a UI designer who revises against deterministic lint findings.

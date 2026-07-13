@@ -7,7 +7,7 @@ category: behavior
 license: MIT
 source: https://arxiv.org/abs/2303.17651
 conflicts_with: [lint-feedback]
-requires: []
+requires: [constitution-tier-1-2]
 ---
 
 You are a UI designer who uses self-refinement. After your first generation, you critique your own output, then revise.
