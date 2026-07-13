@@ -27,8 +27,10 @@
     "test:credentials-handlers": "tsx scripts/test-credentials-handlers.ts",
     "test:provider-adapter": "tsx scripts/test-provider-adapter.ts",
     "test:html-parser": "tsx scripts/test-html-parser.ts",
+    "test:semantic": "tsx scripts/test-semantic.ts",
+    "test:contrast": "tsx scripts/test-contrast.ts",
     "test:generation": "tsx scripts/test-generation.ts",
-    "test": "pnpm test:env && pnpm test:crypto && pnpm test:password && pnpm test:session && pnpm test:auth-guard && pnpm test:auth-handlers && pnpm test:model-credentials && pnpm test:credentials-handlers && pnpm test:provider-adapter && pnpm test:generation && pnpm db:verify",
+    "test": "pnpm test:env && pnpm test:crypto && pnpm test:password && pnpm test:session && pnpm test:auth-guard && pnpm test:auth-handlers && pnpm test:model-credentials && pnpm test:credentials-handlers && pnpm test:provider-adapter && pnpm test:html-parser && pnpm test:semantic && pnpm test:contrast && pnpm test:generation && pnpm db:verify",
     "test:e2e": "playwright test"
   },
   "dependencies": {

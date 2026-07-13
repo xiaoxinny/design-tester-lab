@@ -13,7 +13,7 @@
  * what a browser would render. This is a deliberate trade-off: less
  * fidelity, much simpler test surface, no jsdom/happy-dom dependency.
  */
-import { parse, serialize, type DefaultTreeAdapterTypes } from 'parse5';
+import { parse, type DefaultTreeAdapterTypes } from 'parse5';
 
 type P5Document = DefaultTreeAdapterTypes.Document;
 type P5Element = DefaultTreeAdapterTypes.Element;
@@ -187,11 +187,31 @@ function collectText(node: P5Element): string {
 }
 
 function serializeNode(node: P5Element): string {
-  try {
-    return serialize(node);
-  } catch {
-    return '';
+  // We want the source HTML for evidence. parse5's `serialize` operates on
+  // a full document; for a sub-element it doesn't render the wrapping tag
+  // by default. Hand-build a minimal string from the attrs and tag.
+  let out = `<${node.tagName}`;
+  for (const a of node.attrs) {
+    // Quote value with double quotes, escape any inner " or &.
+    out += ` ${a.name}="${a.value.replace(/&/g, '&amp;').replace(/"/g, '&quot;')}"`;
   }
+  out += '>';
+  // Text content (best-effort; truncated for very long).
+  const text = collectText(node);
+  if (text.length > 0) {
+    out += text.length > 80 ? text.slice(0, 80) + '...' : text;
+  }
+  if (!isVoidElement(node.tagName)) {
+    out += `</${node.tagName}>`;
+  }
+  return out;
+}
+
+function isVoidElement(tag: string): boolean {
+  return tag === 'area' || tag === 'base' || tag === 'br' || tag === 'col' ||
+    tag === 'embed' || tag === 'hr' || tag === 'img' || tag === 'input' ||
+    tag === 'link' || tag === 'meta' || tag === 'source' || tag === 'track' ||
+    tag === 'wbr';
 }
 
 export { VOID_ELEMENTS };
