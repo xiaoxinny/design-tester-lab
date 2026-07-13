@@ -1,8 +1,6 @@
 # Deployment guide
 
-**Status:** v1, Day 1 placeholder. The full Coolify walkthrough is in [the coolify-deploy skill](../.hermes/skills/coolify-deploy/) and gets imported into this document as it stabilizes.
-
-**Last reviewed:** 2026-07-13
+This document covers both storage modes and the recommended deployment patterns. For Coolify-specific operator workflows, see the [Coolify official documentation](https://coolify.io/docs); the patterns described here are compatible with any Docker-based PaaS that supports a `Dockerfile` build pack, a persistent volume, environment variables, and an HTTP port mapping.
 
 ## Overview
 

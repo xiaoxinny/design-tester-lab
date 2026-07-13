@@ -2,7 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2026-07-13
-**Deciders:** Yi Jiaxin, design-tester-lab maintainers
+**Deciders:** Project maintainers
 **Supersedes:** None
 
 ## Context

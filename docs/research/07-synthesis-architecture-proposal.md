@@ -1,6 +1,6 @@
 # Design Knowledge MCP — Synthesis & Architecture Proposal
 
-**Author:** Hermes Agent (MiniMax-M3) for Yi Jiaxin
+**Document type:** Background research synthesis
 **Date:** 2026-07-12 (revised after two adversarial reviews)
 **Status:** Revised proposal — addresses `ADVERSARIAL-REVIEW.md` (first review) and `EVALUATION.md` (second, web-verified review)
 **Companion docs:** `ADVERSARIAL-REVIEW.md` (first review), `EVALUATION.md` (second, web-verified review + Day-0 falsification protocol), `EVALUATION-BRIEF.md` (brief)

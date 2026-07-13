@@ -1,6 +1,6 @@
 # Design Knowledge MCP — Comprehensive Research
 
-**Author:** Hermes Agent (MiniMax-M3) for Yi Jiaxin
+**Document type:** Background research synthesis
 **Date:** 2026-07-12
 **Status:** Research document — synthesizes 5 parallel research streams
 **Companion docs:** `SYNTHESIS.md` (architecture proposal), `ADVERSARIAL-REVIEW.md` (adversarial review)
@@ -436,7 +436,7 @@ generation.complete
 
 ### 3.4 Specific design choices for MiniMax-M3
 
-A MiniMax-M3 is a mid-tier model. Three design choices reflect this:
+A mid-tier model class is the target. Three design choices reflect this:
 
 1. **Maximize what is enforced outside the model.** Tier 1 violations should never reach the model — linter errors at code-write time. This frees model attention for judgment-requiring tiers.
 2. **Lean on Critique-out-Loud, not direct scoring.** When the model must self-evaluate, force the format: *"Describe violations against these principles, then give a pass/fail and severity."* This technique lets an 8B model outperform a 70B direct scorer (Ankner et al., arXiv:2408.11791).
@@ -622,7 +622,7 @@ Three coexisting definitions:
 
 ### 6.4 What this looks like for a user
 
-A MiniMax-M3-class model, given a brief ("design a pricing page for Acme Cloud, B2B engineering teams, dense"), invokes the Design Knowledge MCP and receives:
+A mid-tier model, given a brief ("design a pricing page for Acme Cloud, B2B engineering teams, dense"), invokes the Design Knowledge MCP and receives:
 
 1. Brand spec injected as CSS variables (Tier 4)
 2. Reference component code (shadcn Button, Card, Toggle, Dialog, Badge)

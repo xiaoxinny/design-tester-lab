@@ -1,7 +1,7 @@
 # Adversarial Review — Design Knowledge MCP Synthesis
 
 **Target:** `SYNTHESIS.md` (Design Knowledge MCP proposal)
-**Author of synthesis:** Hermes Agent (MiniMax-M3), 2026-07-12
+**Document type:** Background research synthesis
 **Reviewer:** Second agent via `delegate_task`
 **Date:** 2026-07-12
 **Mode:** Honest pushback. Claims verified or refuted with real URLs, real paper findings, real benchmarks. If a claim is strong, confirmed briefly; if weak, broken with evidence.

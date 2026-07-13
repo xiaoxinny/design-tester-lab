@@ -1,7 +1,7 @@
 # Evaluation Brief — Adversarial Review
 
 **Target:** `SYNTHESIS.md` in this directory
-**Author:** Hermes Agent (parent session)
+**Document type:** Background research
 **Reviewer:** TBD — second agent via `delegate_task`
 **Date:** 2026-07-12
 
@@ -121,7 +121,7 @@ End with:
 ## Style Guidance
 
 - The parent session values honest pushback over validation. If a claim is weak, say so directly with evidence.
-- The user (Yi Jiaxin) is technical and design-literate. Don't over-explain basics.
+- The target user is technical and design-literate. Avoid over-explaining basics.
 - Cite real sources. If you can't verify a claim, say so explicitly.
 - Don't pad. If the synthesis is strong on a point, say "strong, confirmed" and move on.
 

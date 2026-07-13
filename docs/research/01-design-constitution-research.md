@@ -1,7 +1,7 @@
 # Encoding Design Principles as a Machine-Followable "Constitution"
 ## Research Report — Design Knowledge MCP
 
-**Audience:** Architect of a Design Knowledge MCP that must enable MiniMax-M3-class (and above) models to produce principle-adherent design.
+**Audience:** Architects evaluating a Design Knowledge MCP for mid-tier model classes (and above).
 **Question:** What does "principle-adherent" mean operationally, and what is the concrete schema for a Design Constitution file?
 **Method:** Systematic literature review + production-pattern audit (Cursor, Claude Code, AGENTS.md, shadcn MCP, Anthropic Skills, design-engineering blogs).
 
@@ -60,7 +60,7 @@ Recommendation: a **four-tier Design Constitution**, where Tier 1 is enforced by
 - Self-consistency helps for 1–2 step reasoning (+0.7 pts) but **degrades** for 3+ steps.
 - Critique-then-score beats direct scoring even for small models.
 
-**Transfer to design:** The mechanism a small model uses to grade its own design output should be "describe violations against principles, then score." For a MiniMax-M3 producing design, this is the most important inference-time technique available — it lets the model catch what its single forward pass misses.
+**Transfer to design:** The mechanism a small model uses to grade its own design output should be "describe violations against principles, then score." For mid-tier models producing design, this is the most important inference-time technique available — it lets the model catch what its single forward pass misses.
 
 ### 2.5 Anthropic Agent Skills (Oct 2025, Anthropic Engineering Blog)
 
@@ -645,7 +645,7 @@ exemplars:
 
 ## 7. Specific Design for MiniMax-M3-Class Models
 
-A MiniMax-M3 is a mid-tier model. Three design choices reflect this:
+A mid-tier model class is the target. Three design choices reflect this:
 
 1. **Maximize what is enforced outside the model.** Tier 1 violations should never reach the model — they are linter errors at code-write time. This frees model attention for the judgment-requiring tiers.
 

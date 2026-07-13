@@ -62,4 +62,6 @@ supabase/.temp
 
 # hermes agent working files
 .hermes-tmp/
+.hermes/
 *.tmp
+docs/internal/
