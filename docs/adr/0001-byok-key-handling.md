@@ -17,22 +17,22 @@ The question: where do user-supplied keys live, in what form, and under what thr
 
 **In-memory only by default. Optional encrypted-at-rest fallback.**
 
-- **Phase 1 (in-memory, the default):** The user's API key is decrypted from the `model_credentials.encrypted_key` field at the moment a generation is initiated, held in process memory for the duration of that one call, and discarded when the response stream closes. Never written to logs, never serialized, never returned to the client after initial save.
-- **Phase 2 (optional, future):** A "high-value account" flag that prompts for the key per-session instead of storing it. Removes the at-rest encryption problem entirely at the cost of UX.
+- **Default (in-memory):** The user's API key is decrypted from the `model_credentials.encrypted_key` field at the moment a generation is initiated, held in process memory for the duration of that one call, and discarded when the response stream closes. Never written to logs, never serialized, never returned to the client after initial save.
+- **Optional (per-session prompt):** A "high-value account" flag that prompts for the key per-session rather than storing it. Removes the at-rest encryption problem entirely at the cost of UX.
 
-### Encryption (Phase 1 at-rest fallback)
+### Encryption (at-rest fallback)
 
 When the user saves a key via the BYOK form:
 
 - AES-256-GCM with a **per-row 96-bit random IV** stored alongside ciphertext
 - **AAD** = `user_id:credential_id` so swapped-credential attacks fail the auth tag
-- **key_version** column on `model_credentials` table enables rotation without downtime (multi-version decryption reads current key_version first, falls back to older versions)
+- `key_version` column on `model_credentials` table enables rotation without downtime (multi-version decryption reads the active key_version first, then earlier versions)
 - Master key from `ENCRYPTION_KEY` env var (32-byte base64); app refuses to start if missing, wrong size, or equal to `SESSION_SECRET` (key-separation requirement)
 
 ### Memory handling
 
 - Process memory is the unavoidable risk surface for any BYOK system; this is not a defect
-- Node does not allow reliable zeroization; the absence of zeroization is not hidden behind claims of offering it.
+- Node does not allow reliable zeroization; the system makes no claim of zeroization.
 - The app **never logs the key**, never writes it to error reports, never includes it in crash dumps
 - Stack traces are scrubbed at the logger boundary to redact anything matching `sk-[A-Za-z0-9]{20,}` / `sk-ant-[A-Za-z0-9-]{20,}` / `AIza[0-9A-Za-z_-]{35}` / `gsk_[A-Za-z0-9]{20,}` patterns
 
@@ -72,7 +72,7 @@ Negative:
 
 To verify the BYOK path is correctly implemented, check:
 
-- `src/lib/crypto.ts` (or its successor) uses `crypto.createCipheriv('aes-256-gcm', key, iv)` with a fresh IV per encrypt
+- `src/lib/crypto.ts` uses `crypto.createCipheriv('aes-256-gcm', key, iv)` with a fresh IV per encrypt
 - AAD parameter is set to `Buffer.from(`${userId}:${credentialId}`)` (or equivalent) on both encrypt and decrypt
 - The logger has a `redact` hook that scrubs the four provider-key patterns above
 - `db:verify` includes a roundtrip test: encrypt a known string, decrypt it, assert deep-equal
@@ -84,4 +84,4 @@ To verify the BYOK path is correctly implemented, check:
 - NIST SP 800-38D (AES-GCM specification)
 - RFC 9106 (Argon2 standardization)
 - design-tester-lab `docs/security/threat-model.md` (companion document)
-- design-tester-lab `docs/research/09-adversarial-review-v2.md` (the original VLM-judge question)
+- design-tester-lab `docs/research/09-adversarial-review-v2.md` (the VLM-judge question)

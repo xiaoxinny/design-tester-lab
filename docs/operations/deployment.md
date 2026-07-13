@@ -66,7 +66,7 @@ Without `.env`, you cannot decrypt the stored BYOK credentials. Treat it as sens
 - Encrypted backup volume (e.g., gocryptfs + rclone to a cloud bucket)
 - Hardware token for very high-value credentials
 
-Do NOT commit `.env` to git. `.gitignore` already excludes it.
+Do NOT commit `.env` to git. `.gitignore` excludes it.
 
 ## Mode 2 — Supabase Cloud mode
 
@@ -74,7 +74,7 @@ Recommended for: shared use, multi-user, persistent data, public deployment.
 
 ### Requirements
 
-- A Supabase Cloud project (free tier is sufficient for the current feature set)
+- A Supabase Cloud project (free tier is sufficient for the feature set)
 - A Coolify / Dokploy / Railway / Render / Fly.io deployment target
 - A registered domain (optional but recommended for HTTPS)
 - Cloudflare Tunnel or reverse proxy for HTTPS
@@ -113,7 +113,7 @@ Coolify (recommended for self-hosted):
    SUPABASE_DB_URL=<connection string>
    NODE_ENV=production
    ```
-4. Mount a persistent volume at `/app/data` (for any future local-cache files; not strictly needed in Supabase mode)
+4. Mount a persistent volume at `/app/data` (for local-cache files; not strictly needed in Supabase mode)
 5. Add Cloudflare Tunnel or reverse proxy for HTTPS
 6. Deploy
 

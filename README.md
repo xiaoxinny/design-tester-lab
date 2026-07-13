@@ -31,7 +31,7 @@ The project is a host for running augmentations. Augmentations supply the design
 The app runs in one of two modes, chosen automatically by environment:
 
 - **Supabase Cloud mode** (default if Supabase env vars are set): Postgres + Auth + RLS in the cloud. Multi-user, signup flow, password reset via Supabase.
-- **Local mode** (fallback if Supabase env vars are absent): SQLite at `data/design-tester-lab.db`, single user provisioned from `.env`. No signup flow. The `.env` file is the password-recovery mechanism.
+- **Local mode** (fallback when Supabase env vars are unset): SQLite at `data/design-tester-lab.db`, single user provisioned from `.env`. No signup flow. The `.env` file is the password-recovery mechanism.
 
 ### Supabase Cloud mode
 
@@ -71,7 +71,7 @@ cp .env.example .env
 #   LOCAL_DEFAULT_USER_PASSWORD=<12+ chars, your choice>
 
 pnpm db:push   # creates the SQLite schema
-pnpm db:seed   # seeds the 8 v1 augmentations
+pnpm db:seed   # seeds the 8 augmentations
 pnpm dev       # → http://localhost:3030
 ```
 
@@ -79,12 +79,12 @@ Log in at `http://localhost:3030` with the email and password from `.env`.
 
 ### Password recovery in local mode
 
-In local mode, your original password lives in `.env`. If you change it through `/settings` and forget the new one, you have two recovery paths:
+In local mode, the bootstrap password lives in `.env`. If you change it through `/settings` and forget the new one, you have two recovery paths:
 
-- **Read the original from `.env`** — the env var is still there from first setup
+- **Read it from `.env`** — the env var persists from initial setup
 - **Wipe and start over** — `rm data/design-tester-lab.db && pnpm db:push && pnpm db:seed`, then log in with the `.env` password again
 
-No recovery codes, no email reset. If you want those, use Supabase Cloud mode.
+Recovery codes and email reset live in Supabase Cloud mode.
 
 ### Switching from local mode to Supabase Cloud
 

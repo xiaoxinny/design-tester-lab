@@ -4,7 +4,7 @@
 
 **Last updated:** 2026-07-13
 
-## Current status
+## Status
 
 | Metric | Count |
 |---|---|
@@ -24,14 +24,14 @@
 
 All 16 alerts require a major-version upgrade from Next.js 14 to 15 (or 16). The upgrade is pending because:
 
-- The application does not yet use any of the affected features (Image Optimization API, middleware redirects, Server Components for HTTP deserialization, App Router i18n)
+- The application uses none of the affected features (Image Optimization API, middleware redirects, Server Components for HTTP deserialization, App Router i18n).
 - A Next.js 15 upgrade has breaking changes that warrant a dedicated migration session
-- The remaining 16 are split into: 5 high (DoS, middleware bypass, SSRF), 8 medium (XSS, cache poisoning, cache growth), 3 low (dev origin check, race condition)
+- The 16 open alerts split into: 5 high (DoS, middleware bypass, SSRF), 8 medium (XSS, cache poisoning, cache growth), 3 low (dev origin check, race condition)
 
-## Mitigation in the meantime
+## Mitigation
 
-For local-mode deployments behind no public proxy, the residual risk is minimal — the affected code paths are in features outside the v1 scope. For Supabase Cloud mode behind Cloudflare Tunnel, configure the tunnel to vary cache key on `x-nextjs-data` and `x-nextjs-redirect` headers (mitigation noted in the upstream advisories).
+For local-mode deployments behind no public proxy, the residual risk is minimal — the affected code paths are in features outside the shipped scope. For Supabase Cloud mode behind Cloudflare Tunnel, configure the tunnel to vary cache key on `x-nextjs-data` and `x-nextjs-redirect` headers (mitigation noted in the upstream advisories).
 
 ## Tracking
 
-Re-evaluate before production deployment. If still on Next.js 14 by then, schedule the 15 upgrade as a dedicated workstream.
+Re-evaluate at production deployment. If on Next.js 14 at that point, schedule the 15 upgrade as a dedicated workstream.

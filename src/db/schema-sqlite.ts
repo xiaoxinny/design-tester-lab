@@ -36,7 +36,7 @@ export const users = sqliteTable(
   {
     id: text('id').primaryKey(), // uuid-as-string; generated in app code
     email: text('email').notNull(),
-    passwordHash: text('password_hash').notNull(), // bcrypt
+    passwordHash: text('password_hash').notNull(), // argon2id (OWASP-min-A defaults)
     createdAt: integer('created_at', { mode: 'timestamp_ms' })
       .notNull()
       .default(sql`(unixepoch() * 1000)`),

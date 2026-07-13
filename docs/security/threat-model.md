@@ -23,7 +23,7 @@
 | Credential stuffing (online) | Argon2id hashing (~150-300ms per attempt) | Login throttling is pending |
 | Session cookie theft | HttpOnly + SameSite=Lax cookies | CSRF protection is pending |
 | `AUTH_DISABLED` + public bind | Boot-time guard refuses non-loopback bind unless explicit ack | Tunnel/sidecar bypass is documented risk; out of scope to detect |
-| Password reset via forgotten env | Documented: read original password back from `.env`, or wipe DB | Single-user local mode only; not relevant in Supabase mode |
+| Password reset via forgotten env | Documented: read the bootstrap password from `.env`, or wipe DB | Single-user local mode only; not relevant in Supabase mode |
 | ENCRYPTION_KEY == SESSION_SECRET | Equality check at boot; app refuses to start | Crypto separation enforces assumption |
 | Short / predictable keys | ENCRYPTION_KEY must be 32 bytes; SESSION_SECRET must be ≥32 bytes | Random-quality keys require ops discipline (documented in README) |
 
@@ -57,7 +57,7 @@ The app's central feature is generating UI from model output. The model output i
 
 ## Out-of-scope threats
 
-The following are explicitly out of scope for v1:
+The following are explicitly out of scope:
 
 - **DDoS against the app itself.** The local mode is single-tenant; rate limiting is per-user, not anti-DDoS.
 - **Side-channel attacks on the model provider.** Model providers are called as a client; the project does not host them. Their security is theirs.
@@ -68,8 +68,8 @@ The following are explicitly out of scope for v1:
 
 | Threat | Test | Status |
 |---|---|---|
-| BYOK roundtrip | `scripts/test-crypto.ts` (TODO) | — |
-| Logger redaction | `scripts/test-logger-redaction.ts` (TODO) | — |
+| BYOK roundtrip | `scripts/test-crypto.ts` (not implemented) | — |
+| Logger redaction | `scripts/test-logger-redaction.ts` (not implemented) | — |
 | AUTH_DISABLED guard | `scripts/test-env.ts` | ✅ 14 cases pass |
 | ENCRYPTION_KEY size | `scripts/test-env.ts` | ✅ |
 | ENCRYPTION_KEY != SESSION_SECRET | `scripts/test-env.ts` | ✅ |
@@ -79,9 +79,9 @@ The following are explicitly out of scope for v1:
 
 ## Open questions (deferred)
 
-1. **Login throttling.** Currently nothing prevents rapid-fire login attempts. argon2id's ~200ms per attempt is the only rate limit. Add Express-rate-limit-style throttling when the API routes exist.
+1. **Login throttling.** Nothing prevents rapid-fire login attempts. argon2id's ~200ms per attempt is the only rate limit. Add Express-rate-limit-style throttling on the API routes.
 2. **CSRF tokens.** Cookie-based sessions without CSRF tokens are vulnerable to cross-site form submission. Add a `SameSite=Lax` cookie + origin-check on state-mutating requests.
-3. **HSTS / HTTPS-only flags.** The app is HTTP and assumes TLS at the reverse proxy. Add HSTS header when the app is in production. Document in `docs/operations/deployment.md`.
+3. **HSTS / HTTPS-only flags.** The app is HTTP and assumes TLS at the reverse proxy. Add HSTS header for production deployments. Document in `docs/operations/deployment.md`.
 4. **Rate-limit BYOK vault endpoint.** A logged-in user who can write credentials can hammer the endpoint. Add per-user rate limit.
 5. **Audit log.** Every credential read should be logged (without the key itself). Currently the schema has no audit log table.
 6. **Argon2id cost parameters.** OWASP-min-A (m=19456) is fine for single-user local. For multi-tenant Supabase, raise to OWASP-min-B.

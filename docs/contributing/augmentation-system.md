@@ -1,6 +1,6 @@
 # Contributing: the augmentation system
 
-**Status:** Applies to all 8 shipped augmentations + future ones.
+**Status:** Applies to all augmentations in this repository.
 **Audience:** Anyone adding or modifying augmentations.
 
 ## What an augmentation is
@@ -45,7 +45,7 @@ Tokens
 Pick zero or one. Principles add codified design rules to the model's instructions: WCAG, type scale, semantic HTML, aesthetic dispositions. Picking more than one principle would result in contradictory rules.
 
 - `constitution-tier-1-2` — hard rules + structural rules
-- `constitution-full` — hard rules + structural rules + aesthetic dispositions (the latter supersedes tier-1-2)
+- `constitution-full` — hard rules + structural rules + aesthetic dispositions (a superset of tier-1-2)
 
 ### Behavior
 
@@ -95,11 +95,11 @@ Both behaviors require `constitution-tier-1-2` (they critique against the rubric
 `conflicts_with` and `requires` are **id-only** — they don't carry version pins. This is intentional:
 
 - **Conflicts are categorical.** "Two token systems cannot coexist" is true across versions of either. Adding version pins would force every version bump to update the conflicts array.
-- **Requirements are categorical too.** If a future behavior augmentation genuinely depends on a specific version of the constitution, the schema can carry `(id, version)` tuples. Decision deferred.
+- **Requirements are categorical too.** If a behavior augmentation genuinely depends on a specific version of the constitution, the schema can carry `(id, version)` tuples. No augmentation requires this.
 
 A user cannot pick `shadcn-tokens` + `m3-tokens` simultaneously — the stack validator blocks it. A user cannot pick `critique-revise` without `constitution-tier-1-2` — the stack validator warns or blocks.
 
-The validator's current logic is in `src/lib/augmentations/validate-stack.ts` (pending; the conflicts and requires are recorded but the picker does not enforce them yet). The runner enforces them server-side: if a user submits a conflicting stack, the generation fails with a clear error.
+The validator logic is in `src/lib/augmentations/validate-stack.ts` (pending; the conflicts and requires are recorded but the picker does not enforce them). The runner enforces them server-side: if a user submits a conflicting stack, the generation fails with a clear error.
 
 ## Worked example: adding a `tailwind-tokens` augmentation
 
@@ -174,4 +174,4 @@ When you bump a major version, you should also update the conflicts/requires of 
 3. Compare the two outputs side by side
 4. Run the deterministic lint on each — does your augmentation move the lint score?
 
-A programmatic A/B harness is pending, so contributors eyeball outputs in the meantime.
+Compare augmentation outputs by visual inspection. A programmatic A/B harness is not part of the project yet.
