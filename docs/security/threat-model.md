@@ -44,6 +44,7 @@ The app's central feature is generating UI from model output. The model output i
 | `.env` file leak | Gitignored; documented as the password-recovery mechanism | If the host filesystem is compromised, attacker has both DB and key |
 | Untrusted model output rendered next to the user's credentials in the same browser tab | BYOK form is on a separate route from preview | Acceptable |
 | Untrusted augmentation YAML attempts prompt injection at the model | Augmentations are versioned; `published=false` hides them; reviewer must opt in. The loader enforces a strict frontmatter schema and rejects unknown fields. | Acceptable |
+
 ### 5. Supply chain
 
 | Threat | Mitigation | Residual risk |

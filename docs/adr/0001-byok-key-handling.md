@@ -73,7 +73,7 @@ Negative:
 To verify the BYOK path is correctly implemented, check:
 
 - `src/lib/crypto.ts` uses `crypto.createCipheriv('aes-256-gcm', key, iv)` with a fresh IV per encrypt
-- AAD parameter is set to `Buffer.from(`${userId}:${credentialId}`)` (or equivalent) on both encrypt and decrypt
+- AAD parameter is set to `` Buffer.from(`${userId}:${credentialId}`) `` (or equivalent) on both encrypt and decrypt
 - The logger has a `redact` hook that scrubs the four provider-key patterns listed in this section
 - `db:verify` includes a roundtrip test: encrypt a known string, decrypt it, assert deep-equal
 - A negative test: encrypt a credential, modify one byte of the ciphertext, expect decrypt to throw
