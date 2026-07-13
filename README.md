@@ -68,7 +68,7 @@ pnpm install
 cp .env.example .env
 # Edit .env and fill the Local mode section:
 #   LOCAL_DEFAULT_USER_EMAIL=you@home.local
-#   LOCAL_DEFAULT_USER_PASSWORD=*** chars minimum; 12+ recommended
+#   LOCAL_DEFAULT_USER_PASSWORD=<your-password>   # 8+ chars minimum; 12+ recommended
 
 pnpm db:push   # creates the SQLite schema
 pnpm db:seed   # seeds the 8 augmentations
@@ -103,7 +103,7 @@ Recovery codes and email reset live in Supabase Cloud mode.
 - **BYOK** — user-supplied API keys encrypted at rest with AES-256-GCM (key from `ENCRYPTION_KEY` env var)
 - **Model providers** — single OpenAI-compatible adapter (Anthropic, OpenAI, Google, OpenRouter, Ollama, and any OpenAI-compatible endpoint)
 - **Lint engine** — `axe-core`, `apca-w3`, and custom token-consistency, spacing-scale, and semantic-HTML checks, all deterministic, all running in a sandboxed iframe
-- **Augmentations** — YAML files in `content/augmentations/*.md`, validated against a schema, loaded into SQLite at build time
+- **Augmentations** — markdown files with YAML frontmatter in `content/augmentations/*.md`, validated against a schema, loaded into SQLite via `pnpm db:seed`
 - **Deployment** — see [`docs/operations/deployment.md`](docs/operations/deployment.md) for the production deployment shape (Coolify, Docker-based PaaS, self-hosted)
 
 ## The augmentation system

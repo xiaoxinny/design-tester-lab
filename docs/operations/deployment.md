@@ -55,8 +55,9 @@ sqlite3 data/design-tester-lab.db ".backup '/backup/design-tester-lab-$(date +%F
 # Or dump as SQL (portable, human-readable):
 sqlite3 data/design-tester-lab.db .dump > backup.sql
 
-Restore: replace `data/design-tester-lab.db` with the backup, or:
+# Restore: replace data/design-tester-lab.db with the backup, or:
 sqlite3 data/design-tester-lab.db < backup.sql
+```
 
 ### Backup the .env
 

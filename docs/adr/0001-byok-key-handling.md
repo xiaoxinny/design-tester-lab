@@ -15,7 +15,7 @@ The question: where do user-supplied keys live, in what form, and under what thr
 
 ### Storage
 
-**In-memory only by default. Optional encrypted-at-rest fallback.**
+**Encrypted at rest, decrypted in-memory only during use. Optional per-session prompt for high-value accounts.**
 
 - **Default (in-memory):** The user's API key is decrypted from the `model_credentials.encrypted_key` field at the moment a generation is initiated, held in process memory for the duration of that one call, and discarded when the response stream closes. Never written to logs, never serialized, never returned to the client after initial save.
 - **Optional (per-session prompt):** A "high-value account" flag that prompts for the key per-session rather than storing it. Eliminates the at-rest encryption problem at the cost of UX.
