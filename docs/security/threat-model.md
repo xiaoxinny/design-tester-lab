@@ -81,7 +81,7 @@ The following are explicitly out of scope:
 2. **CSRF tokens.** Cookie-based sessions without CSRF tokens are vulnerable to cross-site form submission. Add a `SameSite=Lax` cookie + origin-check on state-mutating requests.
 3. **HSTS / HTTPS-only flags.** The app is HTTP and assumes TLS at the reverse proxy. Add HSTS header for production deployments. Document in `docs/operations/deployment.md`.
 4. **Rate-limit BYOK vault endpoint.** A logged-in user who can write credentials can hammer the endpoint. Add per-user rate limit.
-5. **Audit log.** Every credential read should be logged (without the key itself). Currently the schema has no audit log table.
+5. **Audit log.** Every credential read should be logged (without the key itself). The schema now has an `audit_log` table (`src/lib/audit.ts`) that records `credential_added` and `credential_deleted`. `credential_used` and `credential_decryption_failed` are defined in the action enum but not yet wired into the generation runner (future work).
 6. **Argon2id cost parameters.** OWASP-min-A (m=19456) is fine for single-user local. For multi-tenant Supabase, raise to OWASP-min-B.
 
 ## References
@@ -91,5 +91,4 @@ The following are explicitly out of scope:
 - OWASP Password Storage Cheat Sheet
 - RFC 9106 (Argon2)
 - design-tester-lab `docs/adr/0001-byok-key-handling.md`
-- design-tester-lab `docs/REVIEW-glm-5.2-2026-07-13.md`
-- design-tester-lab `docs/REVIEW-glm-code-2026-07-13.md`
+- design-tester-lab `docs/research/vlm-critique-evaluation.md`
