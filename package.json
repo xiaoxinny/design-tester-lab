@@ -26,6 +26,7 @@
     "test:model-credentials": "tsx scripts/test-model-credentials.ts",
     "test:credentials-handlers": "tsx scripts/test-credentials-handlers.ts",
     "test:provider-adapter": "tsx scripts/test-provider-adapter.ts",
+    "test:html-parser": "tsx scripts/test-html-parser.ts",
     "test:generation": "tsx scripts/test-generation.ts",
     "test": "pnpm test:env && pnpm test:crypto && pnpm test:password && pnpm test:session && pnpm test:auth-guard && pnpm test:auth-handlers && pnpm test:model-credentials && pnpm test:credentials-handlers && pnpm test:provider-adapter && pnpm test:generation && pnpm db:verify",
     "test:e2e": "playwright test"
@@ -53,6 +54,7 @@
     "js-yaml": "^5.2.1",
     "lucide-react": "^0.469.0",
     "next": "14.2.35",
+    "parse5": "^8.0.1",
     "pino": "^9.5.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -75,7 +77,7 @@
     "tailwindcss": "^3.4.17",
     "tailwindcss-animate": "^1.0.7",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.2",
+    "typescript": "^5.9.3",
     "vite": "^7.0.0",
     "vitest": "^4.1.10"
   },
