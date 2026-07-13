@@ -31,10 +31,10 @@ When the user saves a key via the BYOK form:
 
 ### Memory handling
 
-- Process memory is the unavoidable risk surface for any BYOK system; this is not a defect
-- Node does not allow reliable zeroization; the system makes no claim of zeroization.
+- Process memory is the unavoidable risk surface for any BYOK system; this is an inherent constraint
+- Node lacks reliable zeroization; the system makes no claim of zeroization.
 - The app **never logs the key**, never writes it to error reports, never includes it in crash dumps
-- Stack traces are scrubbed at the logger boundary to redact anything matching `sk-[A-Za-z0-9]{20,}` / `sk-ant-[A-Za-z0-9-]{20,}` / `AIza[0-9A-Za-z_-]{35}` / `gsk_[A-Za-z0-9]{20,}` patterns
+- Stack traces are scrubbed at the logger boundary to redact anything matching `sk-[A-Za-z0-9]{20,}` / `sk-ant-[A-Za-z0-9-]{20,}` / `AIza[0-9A-Za-z_-]{35}` / `gsk_[A-Za-z0-9]{20,}` patterns (full list in this section)
 
 ### Transport
 

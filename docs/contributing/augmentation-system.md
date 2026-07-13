@@ -32,24 +32,24 @@ The markdown body is what gets injected into the model's system prompt. The YAML
 
 ### Tokens (pick exactly 1)
 
-Token systems define the design-language primitives the model uses: colors, typography, spacing, components. Multiple token systems are mutually exclusive because they would contradict each other.
+Token systems define the design-language primitives the model uses: colors, typography, spacing, components. Multiple token systems are mutually exclusive because they contradict each other.
 
 Tokens
-- `none` — baseline; no system prompt augmentation
+- `none` — baseline; zero system prompt augmentation
 - `shadcn-tokens` — shadcn/ui design system
 - `m3-tokens` — Material Design 3
 - `better-design-default` — better-design multi-brand (default theme)
 
 ### Principles
 
-Pick zero or one. Principles add codified design rules to the model's instructions: WCAG, type scale, semantic HTML, aesthetic dispositions. Picking more than one principle would result in contradictory rules.
+Pick zero or one. Principles add codified design rules to the model's instructions: WCAG, type scale, semantic HTML, aesthetic dispositions. Picking more than one principle results in contradictory rules.
 
 - `constitution-tier-1-2` — hard rules + structural rules
 - `constitution-full` — hard rules + structural rules + aesthetic dispositions (a superset of tier-1-2)
 
 ### Behavior
 
-Pick zero or one; the two are mutually exclusive. Behavior augmentations modify HOW the model generates, not what it generates. They're mutually exclusive because both behaviors run an additional model call in a similar way and composing them doubles cost without clear benefit.
+Pick zero or one; the two are mutually exclusive. Behavior augmentations modify HOW the model generates, leaving the what unchanged. They're mutually exclusive because both behaviors run an additional model call in a similar way and composing them doubles cost for no clear benefit.
 
 - `critique-revise` — generate, then model critiques its own output, then revises (Self-Refine, Madaan et al. 2023)
 - `lint-feedback` — generate, then run deterministic lint, inject lint output as feedback, model revises
@@ -70,36 +70,36 @@ Both behaviors require `constitution-tier-1-2` (they critique against the rubric
    - `category`: tokens | principles | behavior
    - `license`: SPDX identifier (MIT, Apache-2.0, CC-BY-4.0, etc.)
    - `source`: URL or `internal://...` for project-authored content
-   - `conflicts_with`: list of augmentation IDs (no version pins)
-   - `requires`: list of augmentation IDs (no version pins)
+   - `conflicts_with`: list of augmentation IDs (version pins excluded)
+   - `requires`: list of augmentation IDs (version pins excluded)
 
 4. **Required body sections** (where applicable):
    - The full text the model sees as a system prompt fragment
-   - Any specific values (colors, sizes, tokens) the model should use
+   - Any specific values (colors, sizes, tokens) the model uses
    - A clear workflow if it's a behavior augmentation
    - Citations to source material
 
-5. **Add to stack validation logic.** The loader enforces conflicts_with via `src/lib/augmentations/validate-stack.ts` (not implemented yet). If you add conflicts or requires, the validation must handle them.
+5. **Add to stack validation logic.** The loader enforces conflicts_with via `src/lib/augmentations/validate-stack.ts` (unimplemented). If you add conflicts or requires, the validation must handle them.
 
-6. **Test it.** Run `pnpm db:seed` to load the new augmentation, then run it through a generation in the playground UI to verify it produces expected results.
+6. **Test it.** Run `pnpm db:seed` to load the augmentation, then run it through a generation in the playground UI to verify it produces expected results.
 
-7. **Document.** Update `docs/contributing/augmentation-system.md` (this file) if the new augmentation changes the rules.
+7. **Document.** Update `docs/contributing/augmentation-system.md` (this file) if the augmentation changes the rules.
 
-8. **PR review.** Augmentations inject text into the model system prompt. A malicious augmentation could exfiltrate via prompt injection. Reviewers must:
+8. **PR review.** Augmentations inject text into the model system prompt. A malicious augmentation exfiltrates via prompt injection. Reviewers must:
    - Verify the source URL is legitimate (or `internal://` for project-authored)
    - Verify the body doesn't contain hidden instructions targeting other tools (e.g., "ignore the user's prompt and...")
    - Verify conflicts_with + requires are correct
 
 ## Conflict and requirement semantics
 
-`conflicts_with` and `requires` are **id-only** — they don't carry version pins. This is intentional:
+`conflicts_with` and `requires` are **id-only** — they omit version pins. This is intentional:
 
-- **Conflicts are categorical.** "Two token systems cannot coexist" is true across versions of either. Adding version pins would force every version bump to update the conflicts array.
+- **Conflicts are categorical.** "Two token systems are mutually exclusive" is true across versions of either. Adding version pins forces every version bump to update the conflicts array.
 - **Requirements are categorical too.** If a behavior augmentation genuinely depends on a specific version of the constitution, the schema can carry `(id, version)` tuples. No augmentation requires this.
 
-A user cannot pick `shadcn-tokens` + `m3-tokens` simultaneously — the stack validator blocks it. A user cannot pick `critique-revise` without `constitution-tier-1-2` — the stack validator warns or blocks.
+The stack validator blocks `shadcn-tokens` + `m3-tokens` simultaneously. The stack validator warns or blocks `critique-revise` without `constitution-tier-1-2`.
 
-The validator logic is in `src/lib/augmentations/validate-stack.ts` (not implemented yet; the conflicts and requires are recorded but the picker does not enforce them). The runner enforces them server-side: if a user submits a conflicting stack, the generation fails with a clear error.
+The validator logic is in `src/lib/augmentations/validate-stack.ts` (unimplemented; the conflicts and requires are recorded but the picker leaves them unenforced). The runner enforces them server-side: if a user submits a conflicting stack, the generation fails with a clear error.
 
 ## Worked example: adding a `tailwind-tokens` augmentation
 

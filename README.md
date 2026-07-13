@@ -115,13 +115,13 @@ Augmentations are layered and composable. Users pick from three categories:
 
 Each augmentation is a YAML file in `content/augmentations/` with provenance (source URL and license). To add a new one, open a pull request — see [`docs/contributing/augmentation-system.md`](docs/contributing/augmentation-system.md).
 
-Conflict detection ensures users cannot pick incompatible combinations (for example, `shadcn-tokens` and `m3-tokens` together). Behavior augmentations are mutually exclusive (the two critique loops run independently; the picker does not stack them).
+Conflict detection ensures users cannot pick incompatible combinations (for example, `shadcn-tokens` and `m3-tokens` together). Behavior augmentations are mutually exclusive (the two critique loops run independently; the picker leaves them unstacked).
 
 ## The 8 augmentations
 
 | ID | Category | Description |
 |---|---|---|
-| `none` | tokens | Baseline; no system prompt augmentation |
+| `none` | tokens | Baseline; zero system prompt augmentation |
 | `shadcn-tokens` | tokens | shadcn/ui design system tokens and component patterns |
 | `m3-tokens` | tokens | Material Design 3 foundation tokens and type roles |
 | `better-design-default` | tokens | better-design multi-brand shadcn-based tokens |

@@ -40,7 +40,7 @@ The app's central feature is generating UI from model output. The model output i
 
 | Threat | Mitigation | Residual risk |
 |---|---|---|
-| SQLite file on shared filesystem | File mode 0600 (set by app on boot) | Default umask does not enforce; document |
+| SQLite file on shared filesystem | File mode 0600 (set by app on boot) | Default umask leaves 0600 unenforced; document |
 | `.env` file leak | Gitignored; documented as the password-recovery mechanism | If the host filesystem is compromised, attacker has both DB and key |
 | Untrusted model output rendered next to the user's credentials in the same browser tab | BYOK form is on a separate route from preview | Acceptable |
 | Untrusted augmentation YAML attempts prompt injection at the model | Augmentations are versioned; `published=false` hides them; reviewer must opt in. The loader enforces a strict frontmatter schema and rejects unknown fields. | Acceptable |
@@ -57,7 +57,7 @@ The app's central feature is generating UI from model output. The model output i
 The following are explicitly out of scope:
 
 - **DDoS against the app itself.** The local mode is single-tenant; rate limiting is per-user, not anti-DDoS.
-- **Side-channel attacks on the model provider.** Model providers are called as a client; the project does not host them. Their security is theirs.
+- **Side-channel attacks on the model provider.** Model providers are called as a client; the project runs only on the calling side. Their security is theirs.
 - **Coordinated multi-user attacks.** Local mode is single-user. Supabase Cloud mode uses Supabase's auth and is constrained by their security model.
 - **Recovery from a fully-compromised host.** Out of scope; the threat model assumes the host OS is trustworthy.
 
