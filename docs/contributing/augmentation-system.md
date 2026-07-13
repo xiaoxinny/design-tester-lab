@@ -175,3 +175,9 @@ When you bump a major version, you should also update the conflicts/requires of 
 4. Run the deterministic lint on each — does your augmentation move the lint score?
 
 Compare augmentation outputs by visual inspection. A programmatic A/B harness is not part of the project yet.
+
+## How a stack becomes a system prompt
+
+The generation runner (`src/lib/generation/runner.ts`) reads a stack like `[{id: 'shadcn-tokens', version: '1.0.0'}, {id: 'constitution-tier-1-2', version: '1.0.0'}]` and resolves it through `src/lib/augmentations/apply-stack.ts`. The resolver does one `SELECT` against the `augmentations` table to fetch all rows, then concatenates their `system_prompt` fields in the order they appear in the stack (the SQL `WHERE (id=?,version=?) OR ...` is not ordered, so the resolver rebuilds order from the input array). The concatenated text is what the runner sends to the model as the `system` field.
+
+Stack validation (conflicts / requires) is a separate concern. The resolver does not enforce it; the UI picker is expected to validate before calling. If the resolver finds an id that no longer exists in the table (e.g. a seed was rolled back), it throws a 400 and the runner does not save a run row.
