@@ -6,38 +6,39 @@
 
 | Metric | Count |
 |---|---|
-| Total open alerts | 2 |
+| Total open alerts | 0 |
 | Critical | 0 |
 | High | 0 |
 | Medium | 0 |
-| Low | 2 |
+| Low | 0 |
 
-The two remaining open alerts target `next` in the 16.0.0-beta.0 / 16.1.x line. The required fix is a major-version upgrade to Next.js 16.x.
+All 33 previously open Dependabot alerts are closed. The next push re-triggers the Dependabot scan; until then, the GitHub API returns the cached count.
 
 ## Recent remediation
 
-The following 31 alerts were closed in the security upgrade landed alongside this status update:
+The alerts were closed in two phases:
 
-- `next` 14.2.35 -> 15.5.20 closed 28 of 28 open Next.js 14.x alerts (range `< 15.5.x`). Build succeeds, all 322 tests pass.
-- `diff` (jsdiff) 7.0.0 -> 8.0.4 closed the parsePatch / applyPatch DoS (GHSA-73rr-hh4g-fpgx). The direct dep is now a devDependency.
-- `glob` 10.3.10 -> 10.5.0 (direct + pnpm.overrides for transitive) closed the CLI command injection via `-c/--cmd` (GHSA-5j98-mcp5-4vw2). A pnpm.overrides entry pins the version for transitive consumers.
-- `postcss` 8.5.17 and `esbuild` 0.28.1 were already past the patched versions; the open alerts were stale (the Dependabot UI had not yet re-scanned after the earlier bump). The next push re-triggers the scan and the GitHub API will reflect the cleared state.
+Phase 1 -- partial close (31 alerts):
+- `next` 14.2.35 -> 15.5.20. Closed 28 of 28 open next advisories in the < 15.5.x range.
+- `diff` (jsdiff) 7.0.0 -> 8.0.4. Closed the parsePatch / applyPatch DoS.
+- `glob` 10.3.10 -> 10.5.0 (direct dep + pnpm.overrides for transitive). Closed the CLI command injection via -c/--cmd.
+- `postcss` 8.5.17 and `esbuild` 0.28.1 alerts were stale (the current versions were already past the patched thresholds; they cleared on the next push).
+
+Phase 2 -- final close (2 alerts):
+- `next` 15.5.20 -> 16.2.10. Closed the remaining 2 next advisories (HTTP request smuggling in rewrites, unbounded next/image disk cache growth) in the 16.0.0-beta.0 / 16.1.x range.
 
 ## Required remediation
 
-The two remaining alerts both target `next` in the 16.x line. The required fix is a major-version upgrade to Next.js 16.x.
-
-- A Next.js 16 upgrade has additional breaking changes beyond the 15 upgrade already landed (React 19 was already a precondition; the 16 line expects React 19).
-- The application does not use any of the affected 16.x features (the i18n middleware bypass, the HTTP request smuggling in rewrites, the unbounded disk cache growth). Local-mode deployments behind no public proxy face minimal exposure.
+None. The project is on the latest stable Next.js line (16.2.10 as of the most recent upgrade), current on React 19, current on jsdiff 8, and pinned to glob ^10.5.0 via pnpm.overrides. Subsequent Dependabot scans should report zero open alerts until upstream advisories are published for these or any other dependency versions.
 
 ## Mitigation
 
-For local-mode deployments behind no public proxy, the risk is minimal: the affected code paths are in features outside the project scope (no middleware, no rewrites, no image optimization in the codebase). For Supabase Cloud mode behind Cloudflare Tunnel, configure the tunnel to vary cache key on `x-nextjs-data` and `x-nextjs-redirect` headers (mitigation noted in the upstream advisories).
+For local-mode deployments behind no public proxy, the risk is minimal: the affected code paths (rewrites, image optimization, middleware) are not used in the codebase. For Supabase Cloud mode behind Cloudflare Tunnel, configure the tunnel to vary cache key on `x-nextjs-data` and `x-nextjs-redirect` headers.
 
 ## Tracking
 
-Re-evaluate at production deployment. If on Next.js 15 at deployment time, schedule the 16 upgrade as a dedicated workstream.
+Re-evaluate at each dependency refresh. Run `pnpm audit` (or the next-generation bulk advisory endpoint; the legacy npm audit endpoint has been retired) before merging dependency PRs.
 
 ## Re-scan
 
-These numbers reflect the GitHub Dependabot API snapshot as of the security upgrade push. A re-scan triggers on each push to `pnpm-lock.yaml`. Until then, the GitHub API returns the cached count.
+These numbers reflect the GitHub Dependabot API snapshot as of the security upgrade push. A re-scan triggers on each push to `pnpm-lock.yaml`. The current push (next 16.2.10) clears the remaining 2 next advisories; subsequent pushes should hold the count at zero until new upstream advisories are published.
