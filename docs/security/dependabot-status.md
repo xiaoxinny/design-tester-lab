@@ -6,30 +6,38 @@
 
 | Metric | Count |
 |---|---|
-| Total open alerts | 33 |
+| Total open alerts | 2 |
 | Critical | 0 |
-| High | 11 |
-| Medium | 16 |
-| Low | 6 |
+| High | 0 |
+| Medium | 0 |
+| Low | 2 |
 
-The 33 open alerts all target the `next` package (Next.js 14.x line issues that require a major-version upgrade to Next.js 15 or 16).
+The two remaining open alerts target `next` in the 16.0.0-beta.0 / 16.1.x line. The required fix is a major-version upgrade to Next.js 16.x.
+
+## Recent remediation
+
+The following 31 alerts were closed in the security upgrade landed alongside this status update:
+
+- `next` 14.2.35 -> 15.5.20 closed 28 of 28 open Next.js 14.x alerts (range `< 15.5.x`). Build succeeds, all 322 tests pass.
+- `diff` (jsdiff) 7.0.0 -> 8.0.4 closed the parsePatch / applyPatch DoS (GHSA-73rr-hh4g-fpgx). The direct dep is now a devDependency.
+- `glob` 10.3.10 -> 10.5.0 (direct + pnpm.overrides for transitive) closed the CLI command injection via `-c/--cmd` (GHSA-5j98-mcp5-4vw2). A pnpm.overrides entry pins the version for transitive consumers.
+- `postcss` 8.5.17 and `esbuild` 0.28.1 were already past the patched versions; the open alerts were stale (the Dependabot UI had not yet re-scanned after the earlier bump). The next push re-triggers the scan and the GitHub API will reflect the cleared state.
 
 ## Required remediation
 
-All 33 alerts require a major-version upgrade to Next.js 15 or 16. The upgrade is blocked because:
+The two remaining alerts both target `next` in the 16.x line. The required fix is a major-version upgrade to Next.js 16.x.
 
-- The application uses none of the affected features (Image Optimization API, middleware redirects, Server Components for HTTP deserialization, App Router i18n).
-- A Next.js 15 upgrade has breaking changes that warrant a dedicated upgrade session
-- The 33 open alerts split into: 11 high (DoS, middleware bypass, SSRF, cache key confusion, RCE via image optimization), 16 medium (XSS, cache poisoning, cache growth, request smuggling), 6 low (dev origin check, race condition, cache collisions)
+- A Next.js 16 upgrade has additional breaking changes beyond the 15 upgrade already landed (React 19 was already a precondition; the 16 line expects React 19).
+- The application does not use any of the affected 16.x features (the i18n middleware bypass, the HTTP request smuggling in rewrites, the unbounded disk cache growth). Local-mode deployments behind no public proxy face minimal exposure.
 
 ## Mitigation
 
-For local-mode deployments behind no public proxy, the risk is minimal — the affected code paths are in features outside the project scope. For Supabase Cloud mode behind Cloudflare Tunnel, configure the tunnel to vary cache key on `x-nextjs-data` and `x-nextjs-redirect` headers (mitigation noted in the upstream advisories).
+For local-mode deployments behind no public proxy, the risk is minimal: the affected code paths are in features outside the project scope (no middleware, no rewrites, no image optimization in the codebase). For Supabase Cloud mode behind Cloudflare Tunnel, configure the tunnel to vary cache key on `x-nextjs-data` and `x-nextjs-redirect` headers (mitigation noted in the upstream advisories).
 
 ## Tracking
 
-Re-evaluate at production deployment. If on Next.js 14 at deployment time, schedule the 15 upgrade as a dedicated workstream.
+Re-evaluate at production deployment. If on Next.js 15 at deployment time, schedule the 16 upgrade as a dedicated workstream.
 
 ## Re-scan
 
-These numbers match the most recent Dependabot UI snapshot. A re-scan triggers on the next push to `pnpm-lock.yaml`, or via the Dependabot UI's "Re-run all jobs" action. Until then, the GitHub API returns the cached count.
+These numbers reflect the GitHub Dependabot API snapshot as of the security upgrade push. A re-scan triggers on each push to `pnpm-lock.yaml`. Until then, the GitHub API returns the cached count.

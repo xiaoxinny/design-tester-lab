@@ -81,6 +81,7 @@ The following are explicitly out of scope:
 | Lint engine: orchestrator is total | `pnpm test:lint-runner` | ✅ 17 cases pass (runLint never throws; internal errors become `lint-internal-error` issues) |
 | Rate limiter: token bucket semantics | `pnpm test:rate-limit` | ✅ 15 cases pass (capacity, refill, isolation between keys, isolation between routes, retryAfterMs, precheck bucket in table) |
 | Rate limiter: pre-auth per-IP bucket applied to /api/credentials and /api/generate | `pnpm typecheck` (verifies the import + call sites) | ✅ |
+| Security upgrade: 28 next.js advisories closed by going 14.2.35 -> 15.5.20; jsdiff 7.0.0 -> 8.0.4 closes the parsePatch DoS; glob 10.3.10 -> 10.5.0 (with pnpm.overrides) closes the CLI command injection | `pnpm typecheck && pnpm test && pnpm build` | ✅ |
 
 ## Open questions (deferred)
 
