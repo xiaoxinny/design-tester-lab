@@ -3,7 +3,7 @@ import { resolveEnv, EnvValidationError } from '../src/lib/env';
 const validKey = Buffer.alloc(32, 1).toString('base64'); // 32 bytes of 0x01
 const validSecret = Buffer.alloc(32, 2).toString('base64'); // 32 bytes of 0x02, distinct from validKey
 
-async function expectThrow(label: string, env: NodeJS.ProcessEnv, expectedFragment: string): Promise<void> {
+async function expectThrow(label: string, env: Partial<NodeJS.ProcessEnv>, expectedFragment: string): Promise<void> {
   try {
     const result = await resolveEnv(env);
     console.log(`FAIL: ${label} -- expected throw, got mode=${result.mode}`);
@@ -16,7 +16,7 @@ async function expectThrow(label: string, env: NodeJS.ProcessEnv, expectedFragme
   }
 }
 
-async function expectOk(label: string, env: NodeJS.ProcessEnv): Promise<void> {
+async function expectOk(label: string, env: Partial<NodeJS.ProcessEnv>): Promise<void> {
   try {
     const result = await resolveEnv(env);
     console.log(`OK:   ${label} -- mode=${result.mode}`);

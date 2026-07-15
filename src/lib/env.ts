@@ -29,7 +29,7 @@ function isLoopbackBind(host: string | undefined): boolean {
   return h === '127.0.0.1' || h === '::1' || h === 'localhost' || h === '0:0:0:0:0:0:0:1';
 }
 
-function readEnv(name: string, env: NodeJS.ProcessEnv = process.env): string | undefined {
+function readEnv(name: string, env: Partial<NodeJS.ProcessEnv> = process.env): string | undefined {
   const v = env[name];
   if (v === undefined) return undefined;
   const trimmed = v.trim();
@@ -45,7 +45,7 @@ function readEnv(name: string, env: NodeJS.ProcessEnv = process.env): string | u
   return trimmed;
 }
 
-function readEnvRequired(name: string, env: NodeJS.ProcessEnv = process.env): string {
+function readEnvRequired(name: string, env: Partial<NodeJS.ProcessEnv> = process.env): string {
   const v = readEnv(name, env);
   if (v === undefined) {
     throw new EnvValidationError(`missing required env var: ${name}`);
@@ -96,7 +96,7 @@ export interface ResolvedEnv {
   rateLimitRefillPerSec: number;
 }
 
-export function isSupabaseMode(env: NodeJS.ProcessEnv = process.env): boolean {
+export function isSupabaseMode(env: Partial<NodeJS.ProcessEnv> = process.env): boolean {
   return Boolean(
     readEnv('NEXT_PUBLIC_SUPABASE_URL', env) &&
       readEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', env) &&
@@ -104,7 +104,15 @@ export function isSupabaseMode(env: NodeJS.ProcessEnv = process.env): boolean {
   );
 }
 
-export function resolveEnv(env: NodeJS.ProcessEnv = process.env): ResolvedEnv {
+/**
+ * Resolve all env vars to a ResolvedEnv.
+ *
+ * Partial<NodeJS.ProcessEnv> is intentional: @types/node 22 added
+ * NODE_ENV as a required field on ProcessEnv, which broke test fixtures
+ * that build env objects without it. The runtime validation in
+ * readEnvRequired is the safety net; this signature accepts any subset.
+ */
+export function resolveEnv(env: Partial<NodeJS.ProcessEnv> = process.env): ResolvedEnv {
   const mode = isSupabaseMode(env) ? 'supabase' : 'local';
 
   // Validate ENCRYPTION_KEY in both modes
@@ -226,7 +234,7 @@ export function resolveEnv(env: NodeJS.ProcessEnv = process.env): ResolvedEnv {
   };
 }
 
-function parseIntPositive(value: string, env: NodeJS.ProcessEnv, name: string): number {
+function parseIntPositive(value: string, env: Partial<NodeJS.ProcessEnv>, name: string): number {
   const n = parseInt(value, 10);
   if (Number.isNaN(n) || n < 1) {
     throw new EnvValidationError(`${name} must be a positive integer (got: "${value}")`);
@@ -234,7 +242,7 @@ function parseIntPositive(value: string, env: NodeJS.ProcessEnv, name: string): 
   return n;
 }
 
-function parseNumberPositive(value: string, env: NodeJS.ProcessEnv, name: string): number {
+function parseNumberPositive(value: string, env: Partial<NodeJS.ProcessEnv>, name: string): number {
   const n = Number(value);
   if (Number.isNaN(n) || n < 0) {
     throw new EnvValidationError(`${name} must be a non-negative number (got: "${value}")`);

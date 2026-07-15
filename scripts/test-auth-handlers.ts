@@ -74,7 +74,7 @@ const TEST_EMAIL = 'smoke@test.local';
 
 const tmpDir = mkdtempSync(join(tmpdir(), 'auth-smoke-'));
 process.env.DATABASE_URL = join(tmpDir, 'test.db');
-process.env.NODE_ENV = 'test';
+Object.assign(process.env, { NODE_ENV: 'test' });
 delete process.env.AUTH_DISABLED;
 execFileSync('pnpm', ['exec', 'tsx', 'src/db/push.ts'], { stdio: 'inherit' });
 

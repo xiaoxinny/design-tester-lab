@@ -37,7 +37,7 @@ const SESSION_SECRET = Buffer.alloc(32, 0x99).toString('base64');
 
 const tmpDir = mkdtempSync(join(tmpdir(), 'creds-handlers-test-'));
 process.env.DATABASE_URL = join(tmpDir, 'test.db');
-process.env.NODE_ENV = 'test';
+Object.assign(process.env, { NODE_ENV: 'test' });
 process.env.ENCRYPTION_KEY = ENC_KEY;
 process.env.SESSION_SECRET = SESSION_SECRET;
 delete process.env.AUTH_DISABLED;

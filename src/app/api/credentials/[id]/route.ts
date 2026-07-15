@@ -10,8 +10,9 @@ import { applyRateLimit, applyPreAuthRateLimit } from '@/lib/rate-limit-http';
 
 export const dynamic = 'force-dynamic';
 
+// Next 15 made route context params async. Await before reading.
 interface RouteContext {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 function getAuthedUserId(req: NextRequest): string {
@@ -32,7 +33,8 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
     const userId = getAuthedUserId(req);
     const limited = applyRateLimit(req, 'credentials.read', userId);
     if (limited) return limited;
-    const credential = handleGetCredential(userId, ctx.params.id);
+    const { id } = await ctx.params;
+    const credential = handleGetCredential(userId, id);
     return NextResponse.json({ credential }, { status: 200 });
   } catch (e) {
     if (e instanceof CredentialsHandlerError) {
@@ -49,7 +51,8 @@ export async function DELETE(req: NextRequest, ctx: RouteContext): Promise<NextR
     const userId = getAuthedUserId(req);
     const limited = applyRateLimit(req, 'credentials.write', userId);
     if (limited) return limited;
-    handleDeleteCredential(userId, ctx.params.id);
+    const { id } = await ctx.params;
+    handleDeleteCredential(userId, id);
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch (e) {
     if (e instanceof CredentialsHandlerError) {

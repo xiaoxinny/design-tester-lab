@@ -24,7 +24,7 @@ function fail_(label: string, detail: string): void {
 // Set up: temp DB with the schema applied
 const tmpDir = mkdtempSync(join(tmpdir(), 'session-test-'));
 process.env.DATABASE_URL = join(tmpDir, 'test.db');
-process.env.NODE_ENV = 'test'; // ensure cookie.secure = false
+Object.assign(process.env, { NODE_ENV: 'test' }); // ensure cookie.secure = false
 
 // Apply the schema
 import { readFileSync } from 'node:fs';

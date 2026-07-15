@@ -39,7 +39,7 @@ const ENC_KEY = Buffer.alloc(32, 0x42).toString('base64');
 
 const tmpDir = mkdtempSync(join(tmpdir(), 'gen-test-'));
 process.env.DATABASE_URL = join(tmpDir, 'test.db');
-process.env.NODE_ENV = 'test';
+Object.assign(process.env, { NODE_ENV: 'test' });
 process.env.ENCRYPTION_KEY = ENC_KEY;
 delete process.env.AUTH_DISABLED;
 delete process.env.NEXT_PUBLIC_SUPABASE_URL;

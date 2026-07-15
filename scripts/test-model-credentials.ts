@@ -49,7 +49,7 @@ const encKey = Buffer.alloc(32, 0x37);
 
 const tmpDir = mkdtempSync(join(tmpdir(), 'creds-test-'));
 process.env.DATABASE_URL = join(tmpDir, 'test.db');
-process.env.NODE_ENV = 'test';
+Object.assign(process.env, { NODE_ENV: 'test' });
 delete process.env.AUTH_DISABLED;
 execFileSync('pnpm', ['exec', 'tsx', 'src/db/push.ts'], { stdio: 'inherit' });
 
