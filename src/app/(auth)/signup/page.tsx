@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { OAuthButtons } from '@/components/auth/oauth-buttons';
 
 export default function SignupPage() {
   const [email, setEmail] = useState('');
@@ -120,6 +121,8 @@ export default function SignupPage() {
             Log in
           </a>
         </p>
+
+        <OAuthButtons />
       </CardContent>
     </Card>
     </AnimateIn>
