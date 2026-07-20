@@ -1,217 +1,140 @@
-# Deployment guide
+# Deployment Guide
 
-This document covers both storage modes and the recommended deployment patterns. For Coolify-specific operator workflows, see the [Coolify official documentation](https://coolify.io/docs); the patterns described here are compatible with any Docker-based PaaS that supports a `Dockerfile` build pack, a persistent volume, environment variables, and an HTTP port mapping.
+This guide covers the three supported deployment modes and the production deployment target: Dokploy, a Docker-based PaaS.
 
-## Overview
+## Modes overview
 
-design-tester-lab is a Next.js application with two storage modes:
+| Mode | Configuration | Database | Users | OAuth |
+|---|---|---|---|---|
+| Local mode (default) | `ONLINE_MODE` unset or `0` | SQLite | Single user | No |
+| Supabase mode | `ONLINE_MODE=1` plus Supabase variables | Supabase Postgres | Multi-user | Yes — Google/GitHub via Supabase |
+| Direct Postgres mode | `ONLINE_MODE=1` plus `DATABASE_URL` | PostgreSQL | Multi-user | No |
 
-- **Supabase Cloud mode** (default if Supabase env vars are set): Postgres + Auth + RLS in the cloud
-- **Local mode** (when Supabase env vars are unset): SQLite file, single user provisioned from `.env`
+`ENCRYPTION_KEY` and `SESSION_SECRET` are required in every mode and must be different values. In online mode, use either the complete Supabase configuration or a PostgreSQL `DATABASE_URL`; do not mix the two database configurations unintentionally.
 
-This guide covers both modes and the recommended deployment patterns.
+## Quick start (local development)
 
-## Mode 1 — Local mode on a home server
-
-Recommended for: solo developer, evaluation use, no production traffic.
-
-### Requirements
-
-- Any x86_64 or arm64 Linux box with Docker
-- 2 GB RAM minimum (4 GB recommended for Playwright + headless rendering)
-- 1 GB disk for the SQLite DB + augmentation storage
-- Optional: Tailscale or Cloudflare Tunnel for remote access
-
-### Quick start
+The guided setup is recommended:
 
 ```bash
-git clone https://github.com/xiaoxinny/design-tester-lab
-cd design-tester-lab
-pnpm install
-
-cp .env.example .env
-# Generate two distinct 32-byte secrets:
-openssl rand -base64 32  # ENCRYPTION_KEY
-openssl rand -base64 32  # SESSION_SECRET
-# Set LOCAL_DEFAULT_USER_EMAIL and LOCAL_DEFAULT_USER_PASSWORD
-
-pnpm db:push
-pnpm db:seed
-pnpm build
-pnpm start
-# → http://localhost:3030
+pnpm setup
+pnpm dev
 ```
 
-For LAN access: bind to `0.0.0.0` (Next.js default). Visit `http://<server-ip>:3030` from another device on the same network.
+`pnpm setup` interactively creates the local environment, configures the bootstrap user, and prepares the database.
 
-For external access: use Tailscale (recommended) or Cloudflare Tunnel (more setup). Do NOT just port-forward without auth — the local mode is single-user.
+For a manual setup:
+
+```bash
+cp .env.example .env
+# Fill in ENCRYPTION_KEY, SESSION_SECRET,
+# LOCAL_DEFAULT_USER_EMAIL, and LOCAL_DEFAULT_USER_PASSWORD.
+pnpm db:push
+pnpm db:seed
+pnpm dev
+```
+
+The development server is available at `http://localhost:3030`. Keep `.env` private; it contains secrets and is not committed to git.
+
+## Deploying to Dokploy
+
+### Prerequisites
+
+- A VPS with Dokploy installed
+- A GitHub repository containing the application
+- A domain pointing to the VPS
+- A Supabase project (the free tier is sufficient for online mode)
+
+### Supabase project setup (one-time)
+
+1. Create a project at [supabase.com](https://supabase.com).
+2. Open the Supabase SQL Editor and paste the contents of `drizzle/postgres/schema.sql` to apply the schema.
+3. Enable OAuth providers in **Authentication → Providers → Google** and **GitHub**. Configure the provider credentials as required by Supabase.
+4. Note these values from the Supabase dashboard:
+   - **Project URL**
+   - **Publishable Key**, beginning with `sb_publishable_`
+   - **Service Role Key** (server-only)
+   - **Database connection string**, if you will run seed or migration commands manually
+
+### Dokploy configuration
+
+1. Create an **Application**, select **GitHub**, and choose this repository and the `main` branch.
+2. Set **Build Type** to **Dockerfile**.
+3. Add the Supabase-mode environment variables listed in the reference table below. Set `ONLINE_MODE=1`, `NODE_ENV=production`, and `PORT=3030`.
+4. Configure the domain and route traffic to container port `3030`. Enable HTTPS through Dokploy or its configured reverse proxy.
+5. Deploy.
+
+No manual database initialization is needed during deployment. The container entrypoint handles migrations and seeding for local SQLite mode. In Supabase mode, SQLite initialization is skipped because the schema has already been applied to Supabase.
+
+### Environment variables reference
+
+| Variable | Local mode | Supabase mode | Direct Postgres mode | Notes |
+|---|---:|---:|---:|---|
+| `ONLINE_MODE` | No, or `0` | `1` | `1` | Selects online mode when set to `1` |
+| `ENCRYPTION_KEY` | Required | Required | Required | Base64-encoded 32-byte key; generate with `openssl rand -base64 32` |
+| `SESSION_SECRET` | Required | Required | Required | Session-signing secret; use a different value from `ENCRYPTION_KEY` |
+| `DATABASE_URL` | Required | No | Required | SQLite path, normally `./data/design-tester-lab.db`, or PostgreSQL URL in direct mode |
+| `NEXT_PUBLIC_SUPABASE_URL` | No | Required | No | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | No | Required | No | Client-safe `sb_publishable_...` key |
+| `SUPABASE_SERVICE_ROLE_KEY` | No | Required | No | Server-only; never expose it to the browser |
+| `SUPABASE_DB_URL` | No | Recommended for manual seed/migrations | No | Supabase Postgres connection string for database tooling |
+| `LOCAL_DEFAULT_USER_EMAIL` | Required for bootstrap | No | No | Initial local user email |
+| `LOCAL_DEFAULT_USER_PASSWORD` | Required for bootstrap | No | No | Initial local user password |
+| `STORAGE_DIR` | Optional | Optional | Optional | Defaults to `./data/storage`; persist it if local artifacts are important |
+| `AUGMENTATIONS_DIR` | Optional | Optional | Optional | Defaults to `./content/augmentations` |
+| `NEXT_PUBLIC_APP_URL` | Optional | Recommended | Recommended | Public URL used for canonical links |
+| `PORT` | Optional | Optional | Optional | Defaults to `3030` |
+| `NODE_ENV` | Optional | Recommended `production` | Recommended `production` | Runtime environment |
+| `LOG_LEVEL` | Optional | Optional | Optional | `trace`, `debug`, `info`, `warn`, or `error` |
+| `AUTH_DISABLED` | Local only | No | No | Dangerous development escape hatch; leave `false` in deployments |
+
+### What happens on each redeploy
+
+| Mode | Database and user data | Uploaded/generated files | Redeploy behavior |
+|---|---|---|---|
+| Local mode | Preserved only when `/app/data` is mounted as a persistent volume | Preserved only when the storage directory is on that volume | Entrypoint applies any missing SQLite migrations and re-seeds augmentations idempotently |
+| Supabase mode | Preserved in Supabase | Preserve `/app/data/storage` if the app writes durable local artifacts there | Container replacement does not affect database data; schema initialization is skipped |
+| Direct Postgres mode | Preserved in the configured PostgreSQL server | Preserve `/app/data/storage` if needed | Container replacement does not affect database data; schema management remains external |
+
+Never remove the Dokploy volume or run an equivalent `docker compose down -v` operation when local data must be retained.
+
+### OAuth setup
+
+OAuth is available in Supabase mode only.
+
+1. In Supabase, open **Authentication → Providers**.
+2. Enable **Google** and/or **GitHub** and enter the provider credentials.
+3. Add the application callback URL to the provider's allowed redirect URLs:
+
+   `https://your-domain.com/api/auth/callback`
+
+4. Ensure the application's public URL and Supabase variables match the deployed domain.
 
 ### Backup
 
-```bash
-# Daily
-sqlite3 data/design-tester-lab.db ".backup '/backup/design-tester-lab-$(date +%F).db'"
+For Supabase mode, use the Supabase dashboard's database backup or export tools. Keep a secure copy of the database and the server-side secrets needed to decrypt stored credentials.
 
-# Or dump as SQL (portable, human-readable):
-sqlite3 data/design-tester-lab.db .dump > backup.sql
-
-# Restore: replace data/design-tester-lab.db with the backup, or:
-sqlite3 data/design-tester-lab.db < backup.sql
-```
-
-### Backup the .env
-
-Without `.env`, you cannot decrypt the stored BYOK credentials. Treat it as sensitive. Backup strategy:
-
-- Password manager entry (preferred for the developer)
-- Encrypted backup volume (e.g., gocryptfs + rclone to a cloud bucket)
-- Hardware token for very high-value credentials
-
-Do NOT commit `.env` to git. `.gitignore` excludes it.
-
-## Mode 2 — Supabase Cloud mode
-
-Recommended for: shared use, multi-user, persistent data, public deployment.
-
-### Requirements
-
-- A Supabase Cloud project (free tier is sufficient for the feature set)
-- A Coolify / Dokploy / Railway / Render / Fly.io deployment target
-- A registered domain (optional but recommended for HTTPS)
-- Cloudflare Tunnel or reverse proxy for HTTPS
-
-### Supabase setup
-
-1. Create a project at https://supabase.com
-2. Find your connection strings:
-   - **Project URL**: Settings -> API -> Project URL
-   - **publishable key**: Settings -> API -> publishable key
-   - **service_role key**: Settings -> API -> service_role (server only)
-   - **DB URL**: Settings -> Database -> Connection string -> URI (for migrations)
-3. Apply the schema:
-   ```bash
-   psql "$SUPABASE_DB_URL" < drizzle/0000_smooth_blue_blade.sql
-   ```
-   Or paste `drizzle/0000_smooth_blue_blade.sql` into the Supabase dashboard SQL editor.
-4. Seed augmentations:
-   ```bash
-   pnpm db:seed:supabase
-   ```
-
-### App deployment
-
-Coolify (recommended for self-hosted):
-
-1. Create new Application in Coolify, source = this GitHub repo
-2. Build type: a Node.js build pack with pnpm support (Coolify's default Nixpacks auto-detects `pnpm-lock.yaml`; or use a custom `Dockerfile` if you need fine-grained control), port = 3030
-3. Environment variables:
-   ```
-   ENCRYPTION_KEY=<openssl rand -base64 32>
-   SESSION_SECRET=<openssl rand -base64 32>
-   NEXT_PUBLIC_SUPABASE_URL=<project URL>
-   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<publishable key>
-   SUPABASE_SERVICE_ROLE_KEY=<service role key>
-   SUPABASE_DB_URL=<connection string>
-   NODE_ENV=production
-   ```
-4. Mount a persistent volume at `/app/data` (for local-cache files; not strictly needed in Supabase mode)
-5. Add Cloudflare Tunnel or reverse proxy for HTTPS
-6. Deploy
-
-Health check: `wget -qO- http://localhost:3030/api/health || exit 1` (start period 90s).
-
-## Environment variables reference
-
-| Var | Required | Mode | Notes |
-|---|---|---|---|
-| `ENCRYPTION_KEY` | yes | both | 32-byte base64; distinct from SESSION_SECRET |
-| `SESSION_SECRET` | yes | both | ≥32-byte base64; HMAC for session signing |
-| `NEXT_PUBLIC_SUPABASE_URL` | yes | supabase | https://<ref>.supabase.co |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | yes | supabase | publishable key |
-| `SUPABASE_SERVICE_ROLE_KEY` | yes | supabase | server-only |
-| `SUPABASE_DB_URL` | optional | supabase | only for `db:seed:supabase` |
-| `LOCAL_DEFAULT_USER_EMAIL` | optional | local | bootstrap user on first run |
-| `LOCAL_DEFAULT_USER_PASSWORD` | optional | local | 8+ chars; bootstrap password |
-| `DATABASE_URL` | optional | local | default `./data/design-tester-lab.db` |
-| `STORAGE_DIR` | optional | local | default `./data/storage` |
-| `AUGMENTATIONS_DIR` | optional | both | default `./content/augmentations` |
-| `PORT` | optional | both | default 3030 |
-| `NODE_ENV` | optional | both | `production` recommended |
-| `LOG_LEVEL` | optional | both | `trace\|debug\|info\|warn\|error\|fatal` |
-| `AUTH_DISABLED` | escape hatch | local only | DANGEROUS; see threat model |
-| `I_UNDERSTAND_AUTH_IS_DISABLED_AND_I_AM_EXPOSING_MY_NETWORK` | escape hatch | local only | required if AUTH_DISABLED + non-loopback |
-
-## AGPL-3.0 source-disclosure obligation
-
-If you deploy this app as a network service (web-hosted, accessible to users other than yourself), AGPL-3.0 Section 13 requires that you offer the complete corresponding source code to those users.
-
-For design-tester-lab this means:
-
-- Public deployments must link to the source repo (https://github.com/xiaoxinny/design-tester-lab)
-- Any modifications you make must be published under AGPL-3.0
-- The "Corresponding Source" includes all scripts required to regenerate the binary (build config, schema migrations, environment templates)
-
-This is a non-trivial obligation. If you don't want it, fork under a different license (requires permission from contributors) or use a non-AGPL alternative.
-
-## Operational runbook
-
-### Migrations
+For local mode, copy the SQLite database from the running container and back up the persistent volume contents:
 
 ```bash
-# Local mode
-pnpm db:push
-
-# Supabase mode (manual via dashboard or psql)
-psql "$SUPABASE_DB_URL" < drizzle/0001_*.sql
-
-# After schema changes, regenerate migrations:
-pnpm db:generate
-# Inspect the new drizzle/0001_*.sql file before applying
+docker cp <container-name>:/app/data/design-tester-lab.db ./design-tester-lab-$(date +%F).db
+docker cp <container-name>:/app/data/storage ./storage-backup-$(date +%F)
 ```
 
-### Augmentation updates
+Back up `.env` separately through a password manager or encrypted storage. Without the original `ENCRYPTION_KEY`, encrypted credentials in the database cannot be recovered.
 
-```bash
-# Edit content/augmentations/*.md or add new ones
-# Re-run the seed loader (idempotent -- only updates on (id, version) change)
-pnpm db:seed
+### Troubleshooting
 
-# Or for Supabase mode:
-pnpm db:seed:supabase
-```
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| Container starts and immediately exits | Required environment variable is missing or invalid | Check `ENCRYPTION_KEY`, `SESSION_SECRET`, `ONLINE_MODE`, and the selected database variables in Dokploy logs |
+| App returns 502 after deployment | Domain routes to the wrong port or container is unhealthy | Route Dokploy to port `3030`; inspect container logs and health-check settings |
+| Online mode tries to use SQLite | `ONLINE_MODE` is not exactly `1`, or online variables are incomplete | Set `ONLINE_MODE=1` and provide either all Supabase variables or a PostgreSQL `DATABASE_URL` |
+| Supabase login is missing | OAuth provider is disabled or the callback URL is not allow-listed | Enable the provider in Supabase and add `https://your-domain.com/api/auth/callback` |
+| Local data disappears after redeploy | The `/app/data` persistent volume was not configured or was deleted | Add and retain a Dokploy persistent volume mounted at `/app/data`; restore the latest backup if needed |
+| Schema or seed errors in local mode | Database setup was interrupted or the SQLite path is not writable | Check `DATABASE_URL`, volume permissions, then restart the container so the entrypoint can retry |
+| Direct Postgres connection fails | Invalid URL, unreachable host, or database TLS/network policy | Verify `DATABASE_URL`, allow the Dokploy host, and confirm the database accepts PostgreSQL connections |
 
-### Health check endpoint
+## AGPL-3.0 source disclosure obligation
 
-Currently `GET /api/health` returns `{ status: "ok" }` if the app is running and the DB is reachable. This is what Coolify should poll. To verify manually: `curl http://localhost:3030/api/health`.
-
-### Restart
-
-```bash
-# Local
-pkill -f "next-server" && pnpm start
-
-# Coolify
-# Use the Coolify UI Restart button, or:
-docker restart <container-name>
-
-# Supabase seed re-run
-pnpm db:seed:supabase
-```
-
-## Disaster recovery
-
-If the SQLite DB is corrupted:
-
-1. Stop the app
-2. Backup the corrupted file: `cp data/design-tester-lab.db data/corrupt.db`
-3. Restore from the most recent backup: `cp /backup/latest.db data/design-tester-lab.db`
-4. Restart
-
-If `.env` is lost:
-
-1. Stop the app
-2. Re-create `.env` with the same `LOCAL_DEFAULT_USER_EMAIL` and a NEW `LOCAL_DEFAULT_USER_PASSWORD`
-3. Restart — the app will re-bootstrap the user with the new password
-4. **Important:** any BYOK credentials stored in the previous DB are now lost. They were encrypted with a key derived from the previous `ENCRYPTION_KEY`. To recover them, you need the old `ENCRYPTION_KEY` AND the old DB.
-
-This is why `ENCRYPTION_KEY` backup is critical.
+This project is licensed under AGPL-3.0. If you run it as a network service, Section 13 requires you to offer the complete corresponding source code to users who interact with the service over the network. Keep the source, build configuration, schema, and required scripts available under the same license, and provide users with a clear way to obtain them.

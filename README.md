@@ -28,72 +28,46 @@ The project is a host for running augmentations. Augmentations supply the design
 
 ## Quick start
 
-The app runs in one of two modes, chosen automatically by environment:
-
-- **Supabase Cloud mode** (default if Supabase env vars are set): Postgres + Auth + RLS in the cloud. Multi-user, signup flow, password reset via Supabase.
-- **Local mode** (fallback when Supabase env vars are unset): SQLite at `data/design-tester-lab.db`, single user provisioned from `.env`. No signup flow. The `.env` file is the password-recovery mechanism.
-
-### Supabase Cloud mode
+The fastest way to get started:
 
 ```bash
 git clone https://github.com/xiaoxinny/design-tester-lab
 cd design-tester-lab
 pnpm install
-
-cp .env.example .env
-# Edit .env and fill the Supabase Cloud section.
-# Set SUPABASE_DB_URL to the connection string from your Supabase project:
-#   Settings -> Database -> Connection string -> URI
-
-# Apply the schema to your Supabase project (pick one):
-#   Option A — via the Supabase dashboard SQL editor: paste `drizzle/0000_smooth_blue_blade.sql`
-#   Option B — via psql from your local machine:
-#     psql "$SUPABASE_DB_URL" < drizzle/0000_smooth_blue_blade.sql
-
-# Seed the 8 augmentations into the remote Supabase Postgres:
-pnpm db:seed:supabase
-
-pnpm dev       # → http://localhost:3030
+pnpm setup    # Interactive — generates secrets, configures your mode
+pnpm dev      # → http://localhost:3030
 ```
 
-In Supabase Cloud mode, do **not** run `pnpm db:seed` (which targets local SQLite). Use `pnpm db:seed:supabase` instead. Both scripts are idempotent and safe to re-run.
+The setup script asks which mode you want and handles everything.
 
-### Local mode (no Supabase)
+### Modes
+
+| Mode | Set by | Database | Auth | Use case |
+|------|--------|----------|------|----------|
+| Local | Default (no ONLINE_MODE) | SQLite | Email/password | Solo dev, evaluation |
+| Supabase | ONLINE_MODE=1 + Supabase vars | Supabase Postgres | Email/password + OAuth (Google, GitHub) | Production, multi-user |
+| Direct Postgres | ONLINE_MODE=1 + DATABASE_URL | Self-hosted Postgres | Email/password | Multi-user, no Supabase dependency |
+
+### Manual setup (local mode)
 
 ```bash
-git clone https://github.com/xiaoxinny/design-tester-lab
-cd design-tester-lab
-pnpm install
-
 cp .env.example .env
-# Edit .env and fill the Local mode section:
-#   LOCAL_DEFAULT_USER_EMAIL=you@home.local
-#   LOCAL_DEFAULT_USER_PASSWORD=<your-password>   # 8+ chars minimum; 12+ recommended
-
-pnpm db:push   # creates the SQLite schema
-pnpm db:seed   # seeds the 8 augmentations
-pnpm dev       # → http://localhost:3030
+# Fill ENCRYPTION_KEY and SESSION_SECRET (openssl rand -base64 32, twice)
+# Fill LOCAL_DEFAULT_USER_EMAIL and LOCAL_DEFAULT_USER_PASSWORD
+pnpm db:push
+pnpm db:seed
+pnpm dev
 ```
 
-Log in at `http://localhost:3030` with the email and password from `.env`.
+### Supabase mode
 
-### Password recovery in local mode
+1. Create a Supabase project (free tier)
+2. Apply the schema: paste `drizzle/postgres/schema.sql` into the SQL Editor
+3. Set env vars: ONLINE_MODE=1, NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, SUPABASE_SERVICE_ROLE_KEY
+4. Seed augmentations: `pnpm db:seed:supabase`
+5. `pnpm dev`
 
-In local mode, the bootstrap password lives in `.env`. If you change it through `/settings` and forget the changed password, you have two recovery paths:
-
-- **Read it from `.env`** — the env var persists from setup
-- **Wipe and start over** — `rm data/design-tester-lab.db && pnpm db:push && pnpm db:seed`, then log in with the `.env` password again
-
-Recovery codes and email reset live in Supabase Cloud mode.
-
-### Moving between local mode and Supabase Cloud
-
-1. Create a Supabase Cloud project (free tier)
-2. Apply `drizzle/0000_smooth_blue_blade.sql` to it
-3. Seed the 8 augmentations: `pnpm db:seed:supabase`
-4. Fill in the Supabase section of `.env`
-5. Restart the app
-6. Sign up in the Supabase Auth flow
+For production deployment, see [`docs/operations/deployment.md`](docs/operations/deployment.md).
 
 ## Architecture
 
