@@ -1,7 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
+
+interface AuthConfig {
+  supabaseEnabled: boolean
+  supabaseUrl: string | null
+  providers: string[]
+  magicLinkEnabled: boolean
+}
 
 const providers = [
   { id: 'google', label: 'Google' },
@@ -9,14 +16,33 @@ const providers = [
 ]
 
 export function OAuthButtons() {
+  const [config, setConfig] = useState<AuthConfig | null>(null)
+  const [configLoading, setConfigLoading] = useState(true)
   const [loading, setLoading] = useState<string | null>(null)
   const [magicEmail, setMagicEmail] = useState('')
   const [sending, setSending] = useState(false)
   const [magicLinkSent, setMagicLinkSent] = useState(false)
   const [magicError, setMagicError] = useState<string | null>(null)
 
-  // Only render if Supabase is configured (NEXT_PUBLIC_ vars are inlined at build time)
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return null
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadConfig() {
+      try {
+        const response = await fetch('/api/auth/config')
+        if (!response.ok) return
+        const authConfig = await response.json() as AuthConfig
+        if (!cancelled) setConfig(authConfig)
+      } catch {
+        // Keep auth methods hidden if runtime configuration cannot be loaded.
+      } finally {
+        if (!cancelled) setConfigLoading(false)
+      }
+    }
+
+    void loadConfig()
+    return () => { cancelled = true }
+  }, [])
 
   async function handleOAuth(provider: string) {
     setLoading(provider)
@@ -60,6 +86,8 @@ export function OAuthButtons() {
       setSending(false)
     }
   }
+
+  if (configLoading || config === null || !config.supabaseEnabled) return null
 
   return (
     <div data-testid='oauth-section' className='mt-4'>
