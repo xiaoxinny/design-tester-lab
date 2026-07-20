@@ -1,6 +1,13 @@
 #!/bin/sh
 set -e
 
+# Detect mode — skip SQLite operations in online mode
+if [ "$ONLINE_MODE" = '1' ] || [ "$ONLINE_MODE" = 'true' ] || [ -n "$NEXT_PUBLIC_SUPABASE_URL" ]; then
+  echo '==> Online mode detected, skipping SQLite initialization (database is external)'
+  echo "==> Starting server on port ${PORT:-3030}..."
+  exec node server.js
+fi
+
 echo "==> Running database migrations..."
 node -e "
 const Database = require('better-sqlite3');

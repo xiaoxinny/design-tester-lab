@@ -61,7 +61,7 @@ export class EnvValidationError extends Error {
 }
 
 export interface ResolvedEnv {
-  mode: 'supabase' | 'local';
+  mode: 'supabase' | 'postgres' | 'local';
   port: number;
 
   // Required in both modes
@@ -74,6 +74,11 @@ export interface ResolvedEnv {
     anonKey: string;
     serviceRoleKey: string;
     dbUrl?: string; // optional; only needed for `db:seed:supabase` migrations
+  } | null;
+
+  // Required in direct PostgreSQL mode
+  postgres: {
+    connectionUrl: string;
   } | null;
 
   // Required in local mode
@@ -104,6 +109,25 @@ export function isSupabaseMode(env: Partial<NodeJS.ProcessEnv> = process.env): b
   );
 }
 
+export function detectMode(
+  env: Partial<NodeJS.ProcessEnv> = process.env,
+): ResolvedEnv['mode'] {
+  const onlineMode = readEnv('ONLINE_MODE', env);
+  const isOnline = onlineMode === '1' || onlineMode === 'true';
+
+  if (isOnline || isSupabaseMode(env)) {
+    if (isSupabaseMode(env)) return 'supabase';
+    const dbUrl = readEnv('DATABASE_URL', env);
+    if (dbUrl && (dbUrl.startsWith('postgres://') || dbUrl.startsWith('postgresql://'))) {
+      return 'postgres';
+    }
+    throw new EnvValidationError(
+      'ONLINE_MODE is set but no database configured. Set either Supabase vars (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY) or DATABASE_URL with a postgres:// connection string.',
+    );
+  }
+  return 'local';
+}
+
 /**
  * Resolve all env vars to a ResolvedEnv.
  *
@@ -113,7 +137,7 @@ export function isSupabaseMode(env: Partial<NodeJS.ProcessEnv> = process.env): b
  * readEnvRequired is the safety net; this signature accepts any subset.
  */
 export function resolveEnv(env: Partial<NodeJS.ProcessEnv> = process.env): ResolvedEnv {
-  const mode = isSupabaseMode(env) ? 'supabase' : 'local';
+  const mode = detectMode(env);
 
   // Validate ENCRYPTION_KEY in both modes
   const encryptionKeyB64 = readEnvRequired('ENCRYPTION_KEY', env);
@@ -184,6 +208,23 @@ export function resolveEnv(env: Partial<NodeJS.ProcessEnv> = process.env): Resol
         serviceRoleKey: readEnvRequired('SUPABASE_SERVICE_ROLE_KEY', env),
         dbUrl: readEnv('SUPABASE_DB_URL', env),
       },
+      postgres: null,
+      local: null,
+      authDisabled,
+      logLevel: (readEnv('LOG_LEVEL', env) as ResolvedEnv['logLevel']) ?? 'info',
+      rateLimitCapacity: parseIntPositive(readEnv('RATE_LIMIT_CAPACITY', env) ?? '60', env, 'RATE_LIMIT_CAPACITY'),
+      rateLimitRefillPerSec: parseNumberPositive(readEnv('RATE_LIMIT_REFILL_PER_SEC', env) ?? '1', env, 'RATE_LIMIT_REFILL_PER_SEC'),
+    };
+  }
+
+  if (mode === 'postgres') {
+    return {
+      mode,
+      port,
+      encryptionKey,
+      sessionSecret,
+      supabase: null,
+      postgres: { connectionUrl: readEnvRequired('DATABASE_URL', env) },
       local: null,
       authDisabled,
       logLevel: (readEnv('LOG_LEVEL', env) as ResolvedEnv['logLevel']) ?? 'info',
@@ -221,6 +262,7 @@ export function resolveEnv(env: Partial<NodeJS.ProcessEnv> = process.env): Resol
     encryptionKey,
     sessionSecret,
     supabase: null,
+    postgres: null,
     local: {
       databaseUrl: readEnv('DATABASE_URL', env) ?? './data/design-tester-lab.db',
       storageDir: readEnv('STORAGE_DIR', env) ?? './data/storage',
