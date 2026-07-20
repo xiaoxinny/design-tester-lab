@@ -10,10 +10,13 @@ interface AuthConfig {
   magicLinkEnabled: boolean
 }
 
-const providers = [
-  { id: 'google', label: 'Google' },
-  { id: 'github', label: 'GitHub' },
-]
+const PROVIDER_LABELS: Record<string, string> = {
+  github: 'GitHub',
+  google: 'Google',
+  apple: 'Apple',
+  discord: 'Discord',
+  gitlab: 'GitLab',
+}
 
 export function OAuthButtons() {
   const [config, setConfig] = useState<AuthConfig | null>(null)
@@ -124,28 +127,32 @@ export function OAuthButtons() {
         )}
       </div>
 
-      <div className='relative mb-4'>
-        <div className='absolute inset-0 flex items-center'>
-          <div className='w-full border-t border-border' />
+      {config.providers.length > 0 && (
+        <div className='relative mb-4'>
+          <div className='absolute inset-0 flex items-center'>
+            <div className='w-full border-t border-border' />
+          </div>
+          <div className='relative flex justify-center text-xs'>
+            <span className='bg-surface px-2 text-text-muted'>Or continue with</span>
+          </div>
         </div>
-        <div className='relative flex justify-center text-xs'>
-          <span className='bg-surface px-2 text-text-muted'>Or continue with</span>
+      )}
+      {config.providers.length > 0 && (
+        <div className='flex flex-col gap-2'>
+          {config.providers.map(id => (
+            <Button
+              key={id}
+              type='button'
+              variant='secondary'
+              className='w-full'
+              disabled={loading !== null}
+              onClick={() => handleOAuth(id)}
+            >
+              {loading === id ? 'Redirecting...' : (PROVIDER_LABELS[id] || id)}
+            </Button>
+          ))}
         </div>
-      </div>
-      <div className='flex flex-col gap-2'>
-        {providers.map(p => (
-          <Button
-            key={p.id}
-            type='button'
-            variant='secondary'
-            className='w-full'
-            disabled={loading !== null}
-            onClick={() => handleOAuth(p.id)}
-          >
-            {loading === p.id ? 'Redirecting...' : p.label}
-          </Button>
-        ))}
-      </div>
+      )}
     </div>
   )
 }
