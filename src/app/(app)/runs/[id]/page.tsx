@@ -32,8 +32,13 @@ export default function RunDetailPage() {
 
   useEffect(() => {
     fetch(`/api/runs/${params.id}`)
-      .then((r) => r.json())
+      .then((r) => {
+        if (r.status === 401) { window.location.href = '/login'; return null; }
+        if (!r.ok) throw new Error('Failed to load');
+        return r.json();
+      })
       .then((data) => {
+        if (!data) return;
         setRun(data.run);
         setNotes(data.run?.user_notes || '');
       })
@@ -44,26 +49,37 @@ export default function RunDetailPage() {
   const setRating = useCallback(
     async (rating: number) => {
       if (!run) return;
-      const res = await fetch(`/api/runs/${run.id}`, {
-        method: 'PATCH',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ userRating: rating }),
-      });
-      if (res.ok) {
-        setRun((prev) => (prev ? { ...prev, user_rating: rating } : prev));
-        toast({ variant: 'success', title: 'Rating saved' });
+      try {
+        const res = await fetch(`/api/runs/${run.id}`, {
+          method: 'PATCH',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ userRating: rating }),
+        });
+        if (res.ok) {
+          setRun((prev) => (prev ? { ...prev, user_rating: rating } : prev));
+          toast({ variant: 'success', title: 'Rating saved' });
+        } else {
+          toast({ variant: 'error', title: 'Failed to save rating' });
+        }
+      } catch {
+        toast({ variant: 'error', title: 'Failed to save rating' });
       }
     },
     [run],
   );
 
   const saveNotes = useCallback(async () => {
-    if (!run) return;
-    await fetch(`/api/runs/${run.id}`, {
-      method: 'PATCH',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ userNotes: notes }),
-    });
+    if (!run || notes === (run.user_notes || '')) return;
+    try {
+      const res = await fetch(`/api/runs/${run.id}`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ userNotes: notes }),
+      });
+      if (!res.ok) toast({ variant: 'error', title: 'Failed to save notes' });
+    } catch {
+      toast({ variant: 'error', title: 'Failed to save notes' });
+    }
   }, [run, notes]);
 
   if (loading) {

@@ -41,14 +41,16 @@ COPY --from=build /app/public ./public
 COPY --from=build /app/content ./content
 COPY --from=build /app/drizzle ./drizzle
 
-# Copy the DB scripts for first-run initialization (db:push + db:seed)
-COPY --from=build /app/src/db ./src/db
-COPY --from=build /app/src/lib ./src/lib
-COPY --from=build /app/package.json ./package.json
+# Copy js-yaml (needed by the entrypoint seed step)
+COPY --from=build /app/node_modules/js-yaml ./node_modules/js-yaml
 
-# Create data directory for SQLite (mount as a volume in Dokploy for persistence)
+# Create data directory for SQLite (mount as a volume for persistence)
 RUN mkdir -p /app/data
+
+# Copy the entrypoint script (handles migrations + seed on every start)
+COPY --from=build /app/docker-entrypoint.sh ./docker-entrypoint.sh
+RUN chmod +x ./docker-entrypoint.sh
 
 EXPOSE 3030
 
-CMD ["node", "server.js"]
+ENTRYPOINT ["./docker-entrypoint.sh"]

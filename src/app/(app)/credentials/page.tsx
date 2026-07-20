@@ -75,6 +75,7 @@ export default function CredentialsPage() {
   const [key, setKey] = useState('');
   const [baseUrl, setBaseUrl] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const gridRef = useRef<HTMLDivElement>(null);
 
@@ -176,8 +177,9 @@ export default function CredentialsPage() {
   };
 
   const handleDeleteConfirm = async () => {
-    if (!deleteTarget) return;
+    if (!deleteTarget || deleting) return;
     const target = deleteTarget;
+    setDeleting(true);
     try {
       const res = await fetch(`/api/credentials/${encodeURIComponent(target.id)}`, {
         method: 'DELETE',
@@ -196,6 +198,8 @@ export default function CredentialsPage() {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to delete credential';
       toast({ title: 'Error', description: message, variant: 'error' });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -438,6 +442,7 @@ export default function CredentialsPage() {
                 type="button"
                 variant="danger"
                 onClick={handleDeleteConfirm}
+                disabled={deleting}
                 data-testid="confirm-delete-credential"
               >
                 Delete

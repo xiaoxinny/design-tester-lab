@@ -50,7 +50,7 @@ function RunPanel({ title, run }: { title: string; run: Run }) {
       <CardContent className="space-y-3">
         <div className="rounded-md border border-border overflow-hidden bg-white">
           {run.generated_html ? (
-            <iframe title={`${title} preview`} srcDoc={run.generated_html} sandbox="allow-same-origin" className="w-full h-72 border-0" />
+            <iframe title={`${title} preview`} srcDoc={run.generated_html} sandbox="allow-scripts" className="w-full h-72 border-0" />
           ) : (
             <div className="h-72 flex items-center justify-center text-sm text-text-secondary">No preview available</div>
           )}

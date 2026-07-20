@@ -23,10 +23,12 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const limited = applyRateLimit(req, 'credentials.read', userId)
   if (limited) return limited
 
-  // Query params for filtering
+  // Query params for filtering (clamp to valid range, reject NaN)
   const url = new URL(req.url)
-  const limit = Math.min(parseInt(url.searchParams.get('limit') || '50'), 100)
-  const offset = parseInt(url.searchParams.get('offset') || '0')
+  const rawLimit = parseInt(url.searchParams.get('limit') || '50', 10)
+  const rawOffset = parseInt(url.searchParams.get('offset') || '0', 10)
+  const limit = Math.min(Math.max(Number.isFinite(rawLimit) ? rawLimit : 50, 1), 100)
+  const offset = Math.max(Number.isFinite(rawOffset) ? rawOffset : 0, 0)
 
   const runs = getDb().prepare(
     'SELECT id, prompt_body, model_id, augmentation_stack, generated_html, lint_report, user_rating, user_notes, duration_ms, generated_tokens_used, is_public, share_slug, created_at FROM runs WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?'
@@ -48,11 +50,16 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   const total = (getDb().prepare('SELECT COUNT(*) as count FROM runs WHERE user_id = ?').get(userId) as { count: number }).count
 
+  function safeJson(raw: string | null, fallback: unknown = null): unknown {
+    if (!raw) return fallback
+    try { return JSON.parse(raw) } catch { return fallback }
+  }
+
   return NextResponse.json({
     runs: runs.map(r => ({
       ...r,
-      augmentationStack: JSON.parse(r.augmentation_stack || '[]'),
-      lintReport: r.lint_report ? JSON.parse(r.lint_report) : null,
+      augmentationStack: safeJson(r.augmentation_stack, []),
+      lintReport: safeJson(r.lint_report),
       isPublic: Boolean(r.is_public),
     })),
     total,

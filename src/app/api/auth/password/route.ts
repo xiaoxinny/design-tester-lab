@@ -20,6 +20,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/db/client';
 import { requireUser, AuthError } from '@/lib/auth-guard';
 import { resolveEnv } from '@/lib/env';
+import { deleteSessionsForUser, SESSION_COOKIE_NAME } from '@/lib/session';
 import {
   applyPreAuthRateLimit,
   applyRateLimit,
@@ -140,6 +141,9 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     newHash,
     row.id,
   );
+
+  // Invalidate all existing sessions so stolen cookies are revoked
+  deleteSessionsForUser(row.id);
 
   return NextResponse.json({ ok: true });
 }
