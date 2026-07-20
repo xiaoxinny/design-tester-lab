@@ -71,7 +71,7 @@ export interface ResolvedEnv {
   // Required in Supabase Cloud mode
   supabase: {
     url: string;
-    anonKey: string;
+    publishableKey: string;
     serviceRoleKey: string;
     dbUrl?: string; // optional; only needed for `db:seed:supabase` migrations
   } | null;
@@ -104,7 +104,7 @@ export interface ResolvedEnv {
 export function isSupabaseMode(env: Partial<NodeJS.ProcessEnv> = process.env): boolean {
   return Boolean(
     readEnv('NEXT_PUBLIC_SUPABASE_URL', env) &&
-      readEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', env) &&
+      readEnv('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', env) &&
       readEnv('SUPABASE_SERVICE_ROLE_KEY', env),
   );
 }
@@ -122,7 +122,7 @@ export function detectMode(
       return 'postgres';
     }
     throw new EnvValidationError(
-      'ONLINE_MODE is set but no database configured. Set either Supabase vars (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY) or DATABASE_URL with a postgres:// connection string.',
+      'ONLINE_MODE is set but no database configured. Set either Supabase vars (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, SUPABASE_SERVICE_ROLE_KEY) or DATABASE_URL with a postgres:// connection string.',
     );
   }
   return 'local';
@@ -204,7 +204,7 @@ export function resolveEnv(env: Partial<NodeJS.ProcessEnv> = process.env): Resol
       sessionSecret,
       supabase: {
         url: readEnvRequired('NEXT_PUBLIC_SUPABASE_URL', env),
-        anonKey: readEnvRequired('NEXT_PUBLIC_SUPABASE_ANON_KEY', env),
+        publishableKey: readEnvRequired('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', env),
         serviceRoleKey: readEnvRequired('SUPABASE_SERVICE_ROLE_KEY', env),
         dbUrl: readEnv('SUPABASE_DB_URL', env),
       },

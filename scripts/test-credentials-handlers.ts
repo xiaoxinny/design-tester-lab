@@ -42,7 +42,6 @@ process.env.ENCRYPTION_KEY = ENC_KEY;
 process.env.SESSION_SECRET = SESSION_SECRET;
 delete process.env.AUTH_DISABLED;
 delete process.env.NEXT_PUBLIC_SUPABASE_URL;
-delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 delete process.env.SUPABASE_SERVICE_ROLE_KEY;
 _resetEnvForTests();
 execFileSync('pnpm', ['exec', 'tsx', 'src/db/push.ts'], { stdio: 'inherit' });

@@ -43,7 +43,6 @@ Object.assign(process.env, { NODE_ENV: 'test' });
 process.env.ENCRYPTION_KEY = ENC_KEY;
 delete process.env.AUTH_DISABLED;
 delete process.env.NEXT_PUBLIC_SUPABASE_URL;
-delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 delete process.env.SUPABASE_SERVICE_ROLE_KEY;
 execFileSync('pnpm', ['exec', 'tsx', 'src/db/push.ts'], { stdio: 'inherit' });
 execFileSync('pnpm', ['exec', 'tsx', 'src/db/seed.ts'], { stdio: 'inherit' });

@@ -30,7 +30,7 @@ assert.equal(
 assert.match(
   buildEnv('supabase', secrets, {
     NEXT_PUBLIC_SUPABASE_URL: 'https://example.supabase.co',
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: 'anon',
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test',
     SUPABASE_SERVICE_ROLE_KEY: 'service',
     SUPABASE_DB_URL: 'postgresql://localhost/app',
   }),

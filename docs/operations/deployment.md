@@ -85,7 +85,7 @@ Recommended for: shared use, multi-user, persistent data, public deployment.
 1. Create a project at https://supabase.com
 2. Find your connection strings:
    - **Project URL**: Settings -> API -> Project URL
-   - **anon key**: Settings -> API -> anon / public
+   - **publishable key**: Settings -> API -> publishable key
    - **service_role key**: Settings -> API -> service_role (server only)
    - **DB URL**: Settings -> Database -> Connection string -> URI (for migrations)
 3. Apply the schema:
@@ -109,7 +109,7 @@ Coolify (recommended for self-hosted):
    ENCRYPTION_KEY=<openssl rand -base64 32>
    SESSION_SECRET=<openssl rand -base64 32>
    NEXT_PUBLIC_SUPABASE_URL=<project URL>
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon key>
+   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<publishable key>
    SUPABASE_SERVICE_ROLE_KEY=<service role key>
    SUPABASE_DB_URL=<connection string>
    NODE_ENV=production
@@ -127,7 +127,7 @@ Health check: `wget -qO- http://localhost:3030/api/health || exit 1` (start peri
 | `ENCRYPTION_KEY` | yes | both | 32-byte base64; distinct from SESSION_SECRET |
 | `SESSION_SECRET` | yes | both | ≥32-byte base64; HMAC for session signing |
 | `NEXT_PUBLIC_SUPABASE_URL` | yes | supabase | https://<ref>.supabase.co |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | yes | supabase | anon / public |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | yes | supabase | publishable key |
 | `SUPABASE_SERVICE_ROLE_KEY` | yes | supabase | server-only |
 | `SUPABASE_DB_URL` | optional | supabase | only for `db:seed:supabase` |
 | `LOCAL_DEFAULT_USER_EMAIL` | optional | local | bootstrap user on first run |

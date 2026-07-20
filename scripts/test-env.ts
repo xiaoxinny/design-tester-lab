@@ -87,7 +87,7 @@ async function main() {
     ENCRYPTION_KEY: validKey,
     SESSION_SECRET: validSecret,
     NEXT_PUBLIC_SUPABASE_URL: 'https://abc.supabase.co',
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: 'eyJxxx',
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test',
     SUPABASE_SERVICE_ROLE_KEY: 'eyJxxx',
   });
 }

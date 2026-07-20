@@ -32,7 +32,7 @@ export function buildEnv(mode: SetupMode, secrets: Secrets, values: Values): str
           `ENCRYPTION_KEY=${secrets.encryptionKey}`,
           `SESSION_SECRET=${secrets.sessionSecret}`,
           `NEXT_PUBLIC_SUPABASE_URL=${values.NEXT_PUBLIC_SUPABASE_URL}`,
-          `NEXT_PUBLIC_SUPABASE_ANON_KEY=${values.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+          `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${values.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY}`,
           `SUPABASE_SERVICE_ROLE_KEY=${values.SUPABASE_SERVICE_ROLE_KEY}`,
           `SUPABASE_DB_URL=${values.SUPABASE_DB_URL}`,
         ]
@@ -141,7 +141,7 @@ export async function main(): Promise<void> {
       const values: Values = {};
       for (const name of [
         'NEXT_PUBLIC_SUPABASE_URL',
-        'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+        'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY',
         'SUPABASE_SERVICE_ROLE_KEY',
         'SUPABASE_DB_URL',
       ]) {
