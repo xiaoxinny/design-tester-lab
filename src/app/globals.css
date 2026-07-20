@@ -1,0 +1,81 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-base: 220 10% 98%;
+  --bg-surface: 0 0% 100%;
+  --bg-surface-raised: 220 10% 96%;
+  --border-default: 220 8% 85%;
+  --border-subtle: 220 8% 90%;
+  --border-focus: 170 80% 40%;
+  --text-primary: 220 10% 10%;
+  --text-secondary: 220 5% 40%;
+  --text-muted: 220 5% 60%;
+  --accent: 170 80% 35%;
+  --accent-muted: 170 40% 90%;
+  --danger: 0 65% 48%;
+  --danger-muted: 0 40% 94%;
+  --warning: 35 80% 45%;
+  --warning-muted: 35 50% 92%;
+  --success: 150 60% 35%;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+  --shadow-sm: 0 1px 3px hsl(220 10% 0% / 8%);
+  --shadow-md: 0 4px 12px hsl(220 10% 0% / 12%);
+  --shadow-glow: none;
+}
+
+.dark {
+  --bg-base: 220 12% 6%;
+  --bg-surface: 220 10% 10%;
+  --bg-surface-raised: 220 10% 13%;
+  --border-default: 220 8% 18%;
+  --border-subtle: 220 8% 14%;
+  --border-focus: 170 80% 50%;
+  --text-primary: 220 5% 90%;
+  --text-secondary: 220 5% 60%;
+  --text-muted: 220 5% 40%;
+  --accent: 170 80% 50%;
+  --accent-muted: 170 60% 20%;
+  --danger: 0 60% 55%;
+  --danger-muted: 0 40% 15%;
+  --warning: 40 80% 55%;
+  --warning-muted: 40 50% 15%;
+  --success: 150 60% 45%;
+  --shadow-sm: 0 1px 2px hsl(220 12% 0% / 20%);
+  --shadow-md: 0 4px 12px hsl(220 12% 0% / 30%);
+  --shadow-glow: 0 0 12px hsl(170 80% 50% / 15%);
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    background-color: hsl(var(--bg-base));
+    color: hsl(var(--text-primary));
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+.lab-grid {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Ccircle cx='4' cy='4' r='0.5' fill='currentColor' fill-opacity='0.04'/%3E%3C/svg%3E");
+  background-size: 8px 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
