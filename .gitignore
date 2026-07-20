@@ -65,3 +65,8 @@ supabase/.temp
 .hermes/
 *.tmp
 docs/internal/
+.codegraph/
+
+# editor/agent tooling
+.kiro/
+.serena/

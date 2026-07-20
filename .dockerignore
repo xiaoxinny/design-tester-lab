@@ -1,0 +1,13 @@
+node_modules
+.next
+.git
+data
+*.db
+*.db-journal
+.env
+.env.*
+!.env.example
+docs/internal
+playwright-report
+test-results
+.codegraph
