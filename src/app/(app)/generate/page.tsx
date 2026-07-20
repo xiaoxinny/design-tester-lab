@@ -72,9 +72,17 @@ export default function GeneratePage() {
           fetch('/api/credentials'),
         ]);
 
+        // Redirect to login if session expired
+        if (credsRes.status === 401) {
+          window.location.href = '/login';
+          return;
+        }
+
         if (!cancelled && augsRes.ok) {
           const data = await augsRes.json();
           setAugmentations(data.augmentations ?? []);
+        } else if (!cancelled && !augsRes.ok) {
+          toast({ variant: 'error', title: 'Failed to load augmentations' });
         }
 
         if (!cancelled && credsRes.ok) {
@@ -85,6 +93,8 @@ export default function GeneratePage() {
           if (first) {
             setSelectedCredentialId((current) => current || first.id);
           }
+        } else if (!cancelled && !credsRes.ok) {
+          toast({ variant: 'error', title: 'Failed to load credentials' });
         }
       } catch (err) {
         if (!cancelled) {
@@ -114,6 +124,13 @@ export default function GeneratePage() {
             newDisabled.add(conflictId);
           }
         }
+      }
+    }
+    // Disable augmentations whose requires are not satisfied
+    for (const aug of augmentations) {
+      if (selectedAugs.has(aug.id)) continue;
+      if (aug.requires.length > 0 && !aug.requires.some((r) => selectedAugs.has(r))) {
+        newDisabled.add(aug.id);
       }
     }
     setDisabledAugs(newDisabled);
@@ -147,6 +164,7 @@ export default function GeneratePage() {
   }, []);
 
   async function handleGenerate() {
+    if (generating) return;
     if (!prompt.trim() || !selectedCredentialId || !modelId.trim()) return;
     setGenerating(true);
     setResult(null);

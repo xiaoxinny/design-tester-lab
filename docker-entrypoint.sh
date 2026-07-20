@@ -65,10 +65,11 @@ const upsert = sqlite.prepare(
 
 let count = 0;
 for (const file of files) {
-  const raw = readFileSync(join(resolve(augDir), file), 'utf8');
-  const match = raw.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
-  if (!match) continue;
-  const meta = yaml.load(match[1], { schema: yaml.JSON_SCHEMA });
+  const raw = readFileSync(join(resolve(augDir), file), 'utf8').replace(/\\r\\n/g, '\\n');
+  const match = raw.match(/^---\\n([\\s\\S]*?)\\n---\\n([\\s\\S]*)$/);
+  if (!match) { console.warn('  skipped (no frontmatter):', file); continue; }
+  let meta;
+  try { meta = yaml.load(match[1]); } catch (e) { console.warn('  skipped (invalid YAML):', file, e.message); continue; }
   const body = match[2].trim();
   upsert.run(
     meta.id, meta.version || '1.0.0', meta.name, meta.description || null,
