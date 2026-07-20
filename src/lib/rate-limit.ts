@@ -174,6 +174,7 @@ export const ROUTE_LIMITS: Record<string, RouteRateLimit> = {
   'auth.login': { route: 'auth.login', capacity: 5, refillPerSec: 5 / 60 }, // 5 per minute
   'auth.signup': { route: 'auth.signup', capacity: 5, refillPerSec: 5 / 3600 }, // 5 per hour
   'auth.logout': { route: 'auth.logout', capacity: 30, refillPerSec: 0.5 }, // 30 per minute
+  'auth.password': { route: 'auth.password', capacity: 5, refillPerSec: 5 / 60 }, // 5/min (per user), per-IP preauth caps further
   'credentials.write': { route: 'credentials.write', capacity: 20, refillPerSec: 20 / 60 }, // 20/min
   'credentials.read': { route: 'credentials.read', capacity: 60, refillPerSec: 1 }, // 60/min
   'generate': { route: 'generate', capacity: 10, refillPerSec: 10 / 60 }, // 10/min
