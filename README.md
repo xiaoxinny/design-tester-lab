@@ -63,7 +63,7 @@ pnpm dev
 
 1. Create a Supabase project (free tier)
 2. Apply the schema: paste `drizzle/postgres/schema.sql` into the SQL Editor
-3. Set env vars: ONLINE_MODE=1, NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, SUPABASE_SERVICE_ROLE_KEY
+3. Set env vars: ONLINE_MODE=1, NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (SUPABASE_SECRET_KEY optional, only for admin operations)
 4. Seed augmentations: `pnpm db:seed:supabase`
 5. `pnpm dev`
 

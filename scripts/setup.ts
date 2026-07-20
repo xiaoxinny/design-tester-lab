@@ -33,7 +33,8 @@ export function buildEnv(mode: SetupMode, secrets: Secrets, values: Values): str
           `SESSION_SECRET=${secrets.sessionSecret}`,
           `NEXT_PUBLIC_SUPABASE_URL=${values.NEXT_PUBLIC_SUPABASE_URL}`,
           `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${values.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY}`,
-          `SUPABASE_SERVICE_ROLE_KEY=${values.SUPABASE_SERVICE_ROLE_KEY}`,
+          // SUPABASE_SECRET_KEY is optional; only emit when the user provided one.
+          ...(values.SUPABASE_SECRET_KEY ? [`SUPABASE_SECRET_KEY=${values.SUPABASE_SECRET_KEY}`] : []),
           `SUPABASE_DB_URL=${values.SUPABASE_DB_URL}`,
         ]
       : [
@@ -139,14 +140,17 @@ export async function main(): Promise<void> {
 
     if (provider === '' || provider === '1') {
       const values: Values = {};
-      for (const name of [
-        'NEXT_PUBLIC_SUPABASE_URL',
-        'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY',
-        'SUPABASE_SERVICE_ROLE_KEY',
-        'SUPABASE_DB_URL',
-      ]) {
+      // Required: client-visible Supabase vars.
+      for (const name of ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'SUPABASE_DB_URL']) {
         values[name] = await askUntil(rl, `${name}:`, (value) => value.length > 0, `${name} is required.`);
       }
+      // Optional: server-side secret key for admin operations.
+      // Skip with Enter; the app runs fine without it for normal client-side auth.
+      console.log('\nSupabase secret key (optional, press Enter to skip):');
+      const secretKey = await new Promise<string>((resolve) => {
+        rl.question('> ', (answer) => resolve(answer.trim()));
+      });
+      values.SUPABASE_SECRET_KEY = secretKey;
       writeEnvironment('supabase', secrets, values);
       console.log('\nApply schema: psql $SUPABASE_DB_URL < drizzle/0000_smooth_blue_blade.sql');
       console.log('Seed: pnpm db:seed:supabase');

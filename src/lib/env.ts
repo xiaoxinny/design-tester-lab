@@ -72,7 +72,8 @@ export interface ResolvedEnv {
   supabase: {
     url: string;
     publishableKey: string;
-    serviceRoleKey: string;
+    /** Server-side admin key. Optional — only needed for admin operations. */
+    secretKey: string | null;
     dbUrl?: string; // optional; only needed for `db:seed:supabase` migrations
   } | null;
 
@@ -102,10 +103,11 @@ export interface ResolvedEnv {
 }
 
 export function isSupabaseMode(env: Partial<NodeJS.ProcessEnv> = process.env): boolean {
+  // Detection requires only the client-visible vars (URL + publishable key);
+  // SUPABASE_SECRET_KEY / SUPABASE_SERVICE_ROLE_KEY are optional admin creds.
   return Boolean(
     readEnv('NEXT_PUBLIC_SUPABASE_URL', env) &&
-      readEnv('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', env) &&
-      readEnv('SUPABASE_SERVICE_ROLE_KEY', env),
+      readEnv('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', env),
   );
 }
 
@@ -122,7 +124,7 @@ export function detectMode(
       return 'postgres';
     }
     throw new EnvValidationError(
-      'ONLINE_MODE is set but no database configured. Set either Supabase vars (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, SUPABASE_SERVICE_ROLE_KEY) or DATABASE_URL with a postgres:// connection string.',
+      'ONLINE_MODE is set but no database configured. Set either Supabase vars (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) or DATABASE_URL with a postgres:// connection string.',
     );
   }
   return 'local';
@@ -205,7 +207,12 @@ export function resolveEnv(env: Partial<NodeJS.ProcessEnv> = process.env): Resol
       supabase: {
         url: readEnvRequired('NEXT_PUBLIC_SUPABASE_URL', env),
         publishableKey: readEnvRequired('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', env),
-        serviceRoleKey: readEnvRequired('SUPABASE_SERVICE_ROLE_KEY', env),
+        // Accept either the legacy SUPABASE_SERVICE_ROLE_KEY or the new
+        // SUPABASE_SECRET_KEY name; optional — only needed for admin operations.
+        secretKey:
+          readEnv('SUPABASE_SERVICE_ROLE_KEY', env) ??
+          readEnv('SUPABASE_SECRET_KEY', env) ??
+          null,
         dbUrl: readEnv('SUPABASE_DB_URL', env),
       },
       postgres: null,

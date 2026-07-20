@@ -90,6 +90,19 @@ async function main() {
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test',
     SUPABASE_SERVICE_ROLE_KEY: 'eyJxxx',
   });
+  await expectOk('supabase mode is OK without the optional secret key (client-only auth)', {
+    ENCRYPTION_KEY: validKey,
+    SESSION_SECRET: validSecret,
+    NEXT_PUBLIC_SUPABASE_URL: 'https://abc.supabase.co',
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test',
+  });
+  await expectOk('supabase mode accepts the new SUPABASE_SECRET_KEY name as a legacy alias', {
+    ENCRYPTION_KEY: validKey,
+    SESSION_SECRET: validSecret,
+    NEXT_PUBLIC_SUPABASE_URL: 'https://abc.supabase.co',
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test',
+    SUPABASE_SECRET_KEY: 'eyJxxx',
+  });
 }
 
 main().catch((e) => {

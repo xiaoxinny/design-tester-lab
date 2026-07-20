@@ -76,7 +76,7 @@ No manual database initialization is needed during deployment. The container ent
 | `DATABASE_URL` | Required | No | Required | SQLite path, normally `./data/design-tester-lab.db`, or PostgreSQL URL in direct mode |
 | `NEXT_PUBLIC_SUPABASE_URL` | No | Required | No | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | No | Required | No | Client-safe `sb_publishable_...` key |
-| `SUPABASE_SERVICE_ROLE_KEY` | No | Required | No | Server-only; never expose it to the browser |
+| `SUPABASE_SECRET_KEY` (alias: `SUPABASE_SERVICE_ROLE_KEY`) | No | Optional | No | Server-only `sb_secret_...` admin key. Not required for client-side auth; only needed for admin operations. Legacy `SUPABASE_SERVICE_ROLE_KEY` is still accepted. |
 | `SUPABASE_DB_URL` | No | Recommended for manual seed/migrations | No | Supabase Postgres connection string for database tooling |
 | `LOCAL_DEFAULT_USER_EMAIL` | Required for bootstrap | No | No | Initial local user email |
 | `LOCAL_DEFAULT_USER_PASSWORD` | Required for bootstrap | No | No | Initial local user password |

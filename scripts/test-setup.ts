@@ -31,10 +31,22 @@ assert.match(
   buildEnv('supabase', secrets, {
     NEXT_PUBLIC_SUPABASE_URL: 'https://example.supabase.co',
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test',
-    SUPABASE_SERVICE_ROLE_KEY: 'service',
+    SUPABASE_SECRET_KEY: 'secret',
     SUPABASE_DB_URL: 'postgresql://localhost/app',
   }),
   /^ONLINE_MODE=1\n/,
+);
+
+// When SUPABASE_SECRET_KEY is empty/absent, the .env output should NOT contain the line.
+const envWithoutSecret = buildEnv('supabase', secrets, {
+  NEXT_PUBLIC_SUPABASE_URL: 'https://example.supabase.co',
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test',
+  SUPABASE_DB_URL: 'postgresql://localhost/app',
+});
+assert.equal(
+  envWithoutSecret.includes('SUPABASE_SECRET_KEY'),
+  false,
+  'SUPABASE_SECRET_KEY should be omitted when not provided',
 );
 
 assert.match(
