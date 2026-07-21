@@ -107,7 +107,7 @@ export function isSupabaseMode(env: Partial<NodeJS.ProcessEnv> = process.env): b
   // SUPABASE_SECRET_KEY / SUPABASE_SERVICE_ROLE_KEY are optional admin creds.
   return Boolean(
     readEnv('NEXT_PUBLIC_SUPABASE_URL', env) &&
-      readEnv('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', env),
+      (readEnv('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', env) || readEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', env)),
   );
 }
 
@@ -206,7 +206,7 @@ export function resolveEnv(env: Partial<NodeJS.ProcessEnv> = process.env): Resol
       sessionSecret,
       supabase: {
         url: readEnvRequired('NEXT_PUBLIC_SUPABASE_URL', env),
-        publishableKey: readEnvRequired('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', env),
+        publishableKey: readEnv('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', env) || readEnvRequired('NEXT_PUBLIC_SUPABASE_ANON_KEY', env),
         // Accept either the legacy SUPABASE_SERVICE_ROLE_KEY or the new
         // SUPABASE_SECRET_KEY name; optional — only needed for admin operations.
         secretKey:
