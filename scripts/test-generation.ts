@@ -108,7 +108,7 @@ async function main(): Promise<void> {
   const encKey = Buffer.from(ENC_KEY, 'base64');
 
   // Add a credential for the runner to use.
-  const credential = addCredential({
+  const credential = await addCredential({
     userId: 'user-1',
     provider: 'anthropic',
     label: 'work',
@@ -117,7 +117,7 @@ async function main(): Promise<void> {
   });
 
   // === resolveStack: empty stack returns empty string ===
-  if (resolveStack([]) !== '') {
+  if (await resolveStack([]) !== '') {
     fail_('resolveStack returns empty string for empty stack', 'non-empty');
   } else {
     ok('resolveStack returns empty string for empty stack', "''");
@@ -126,7 +126,7 @@ async function main(): Promise<void> {
   // === resolveStack: missing augmentation throws ===
   let threw = false;
   try {
-    resolveStack([{ id: 'does-not-exist', version: '1.0.0' }]);
+    await resolveStack([{ id: 'does-not-exist', version: '1.0.0' }]);
   } catch (e) {
     threw = e instanceof AugmentationResolverError && e.statusCode === 400;
   }
@@ -144,7 +144,7 @@ async function main(): Promise<void> {
   if (realAugs.length !== 2) {
     fail_('seed contains expected augmentations', `got: ${realAugs.length}`);
   } else {
-    const resolved = resolveStack(realAugs);
+    const resolved = await resolveStack(realAugs);
     if (resolved.length < 100) {
       fail_('resolveStack returns non-trivial text for real stack', `len=${resolved.length}`);
     } else {
@@ -157,7 +157,7 @@ async function main(): Promise<void> {
   // Reset the audit log so we count just this run's events.
   // (We don't have a clear function; instead, count from the end of the
   // file, which is good enough because the test uses a fresh tmp DB.)
-  const auditBefore = readEvents({ userId: 'user-1' }).length;
+  const auditBefore = await readEvents({ userId: 'user-1' }).length;
 
   // The previous test runs (test-model-credentials, test-credentials-handlers)
   // share the same `data/design-tester-lab.db` via test scripts. The
@@ -295,7 +295,7 @@ async function main(): Promise<void> {
   }
 
   // Verify the audit log.
-  const auditAfter = readEvents({ userId: 'user-1' });
+  const auditAfter = await readEvents({ userId: 'user-1' });
   const credentialUsed = auditAfter.find((e) => e.action === 'credential_used');
   if (!credentialUsed) {
     fail_('credential_used audit event was written', 'no event');
@@ -394,7 +394,7 @@ async function main(): Promise<void> {
     ok('decryption failure message mentions decrypt', 'matches');
   }
   // Audit log
-  const decryptAudit = readEvents({ userId: 'user-1' }).find(
+  const decryptAudit = await readEvents({ userId: 'user-1' }).find(
     (e) => e.action === 'credential_decryption_failed',
   );
   if (!decryptAudit) {

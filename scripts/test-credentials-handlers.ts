@@ -147,7 +147,7 @@ async function main(): Promise<void> {
 
   // === Audit log written on add ===
 
-  const eventsAfterAdd = readEvents({ userId: 'user-1' });
+  const eventsAfterAdd = await readEvents({ userId: 'user-1' });
   const addEvent = eventsAfterAdd.find((e) => e.action === 'credential_added');
   if (!addEvent) {
     fail_('credential_added audit event was written', 'no event');
@@ -217,7 +217,7 @@ async function main(): Promise<void> {
   // === Delete ===
 
   handleDeleteCredential('user-1', c1.id);
-  const eventsAfterDelete = readEvents({ userId: 'user-1' });
+  const eventsAfterDelete = await readEvents({ userId: 'user-1' });
   const deleteEvent = eventsAfterDelete.find((e) => e.action === 'credential_deleted');
   if (!deleteEvent) {
     fail_('credential_deleted audit event was written', 'no event');

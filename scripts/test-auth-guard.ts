@@ -64,7 +64,7 @@ async function main(): Promise<void> {
 
   // === AUTH_DISABLED path ===
 
-  const devUser = requireUser({ authDisabled: true });
+  const devUser = await requireUser({ authDisabled: true });
   if (devUser.userId !== DEV_USER_ID_LITERAL) {
     fail_('AUTH_DISABLED returns dev user', `got: ${devUser.userId}`);
   } else {
@@ -85,19 +85,19 @@ async function main(): Promise<void> {
 
   expectThrow(
     'no cookie header throws 401',
-    () => requireUser({ authDisabled: false, cookieHeader: null }),
+    () => await requireUser({ authDisabled: false, cookieHeader: null }),
     401,
     'not authenticated',
   );
   expectThrow(
     'undefined cookie header throws 401',
-    () => requireUser({ authDisabled: false, cookieHeader: undefined }),
+    () => await requireUser({ authDisabled: false, cookieHeader: undefined }),
     401,
     'not authenticated',
   );
   expectThrow(
     'empty cookie header throws 401',
-    () => requireUser({ authDisabled: false, cookieHeader: '' }),
+    () => await requireUser({ authDisabled: false, cookieHeader: '' }),
     401,
     'not authenticated',
   );
@@ -106,14 +106,14 @@ async function main(): Promise<void> {
 
   expectThrow(
     'cookie with no session cookie throws 401',
-    () => requireUser({ authDisabled: false, cookieHeader: 'other=value' }),
+    () => await requireUser({ authDisabled: false, cookieHeader: 'other=value' }),
     401,
     'not authenticated',
   );
   expectThrow(
     'session cookie with malformed value throws 401',
     () =>
-      requireUser({
+      await requireUser({
         authDisabled: false,
         cookieHeader: `${SESSION_COOKIE_NAME}=not-hex`,
       }),
@@ -123,7 +123,7 @@ async function main(): Promise<void> {
   expectThrow(
     'session cookie with right format but non-existent id throws 401',
     () =>
-      requireUser({
+      await requireUser({
         authDisabled: false,
         cookieHeader: `${SESSION_COOKIE_NAME}=${'0'.repeat(64)}`,
       }),
@@ -133,9 +133,9 @@ async function main(): Promise<void> {
 
   // === Valid cookie ===
 
-  const { session } = createSession({ userId: 'user-1' });
+  const { session } = await createSession({ userId: 'user-1' });
   const validCookie = `${SESSION_COOKIE_NAME}=${session.id}`;
-  const authed = requireUser({ authDisabled: false, cookieHeader: validCookie });
+  const authed = await requireUser({ authDisabled: false, cookieHeader: validCookie });
   if (authed.userId !== 'user-1') {
     fail_('valid session returns the right user', `got: ${authed.userId}`);
   } else {
@@ -149,34 +149,34 @@ async function main(): Promise<void> {
 
   // === Expired session ===
 
-  const { session: shortSession } = createSession({ userId: 'user-1', ttlMs: 1 });
+  const { session: shortSession } = await createSession({ userId: 'user-1', ttlMs: 1 });
   await new Promise((r) => setTimeout(r, 50));
   const shortCookie = `${SESSION_COOKIE_NAME}=${shortSession.id}`;
   expectThrow(
     'expired session throws 401',
-    () => requireUser({ authDisabled: false, cookieHeader: shortCookie }),
+    () => await requireUser({ authDisabled: false, cookieHeader: shortCookie }),
     401,
     'not authenticated',
   );
 
   // === Deleted session ===
 
-  const { session: deletedSession } = createSession({ userId: 'user-1' });
+  const { session: deletedSession } = await createSession({ userId: 'user-1' });
   const deletedCookie = `${SESSION_COOKIE_NAME}=${deletedSession.id}`;
   // Delete via the DB directly to simulate admin action
-  getDb().prepare('DELETE FROM sessions WHERE id = ?').run(deletedSession.id);
+  getDb().run('DELETE FROM sessions WHERE id = ?', deletedSession.id);
   expectThrow(
     'deleted session throws 401',
-    () => requireUser({ authDisabled: false, cookieHeader: deletedCookie }),
+    () => await requireUser({ authDisabled: false, cookieHeader: deletedCookie }),
     401,
     'not authenticated',
   );
 
   // === Multi-cookie header ===
 
-  const { session: s3 } = createSession({ userId: 'user-2' });
+  const { session: s3 } = await createSession({ userId: 'user-2' });
   const multiCookie = `theme=dark; ${SESSION_COOKIE_NAME}=${s3.id}; tracking=off`;
-  const authed3 = requireUser({ authDisabled: false, cookieHeader: multiCookie });
+  const authed3 = await requireUser({ authDisabled: false, cookieHeader: multiCookie });
   if (authed3.userId !== 'user-2') {
     fail_('multi-cookie header parses the right session', `got: ${authed3.userId}`);
   } else {
@@ -185,17 +185,17 @@ async function main(): Promise<void> {
 
   // === getCurrentUser returns null vs throws ===
 
-  if (getCurrentUser({ authDisabled: false, cookieHeader: null }) !== null) {
+  if (await getCurrentUser({ authDisabled: false, cookieHeader: null }) !== null) {
     fail_('getCurrentUser returns null when not authed', 'non-null');
   } else {
     ok('getCurrentUser returns null when not authed', 'null');
   }
-  if (!getCurrentUser({ authDisabled: false, cookieHeader: validCookie })) {
+  if (!await getCurrentUser({ authDisabled: false, cookieHeader: validCookie })) {
     fail_('getCurrentUser returns user when authed', 'falsy');
   } else {
     ok('getCurrentUser returns user when authed', 'truthy');
   }
-  if (!getCurrentUser({ authDisabled: true })) {
+  if (!await getCurrentUser({ authDisabled: true })) {
     fail_('getCurrentUser returns dev user when AUTH_DISABLED', 'falsy');
   } else {
     ok('getCurrentUser returns dev user when AUTH_DISABLED', 'truthy');

@@ -63,7 +63,7 @@ function cookieHeader(sessionId: string): string {
 }
 
 function hasUsers(): boolean {
-  const row = getDb().prepare('SELECT COUNT(*) as c FROM users').get() as { c: number };
+  const row = getDb().get('SELECT COUNT(*) as c FROM users', ) as { c: number };
   return row.c > 0;
 }
 
@@ -115,7 +115,7 @@ async function main(): Promise<void> {
     ok('signup cookie SameSite=lax', signup.cookie.sameSite);
   }
   // Verify the session row exists in the DB
-  const sessionAfterSignup = getSession(signup.sessionId);
+  const sessionAfterSignup = await getSession(signup.sessionId);
   if (!sessionAfterSignup) {
     fail_('signup creates a session row in DB', 'session not found');
   } else if (sessionAfterSignup.userId !== signup.userId) {
@@ -140,7 +140,7 @@ async function main(): Promise<void> {
   } else {
     ok('login creates a new session id', login.sessionId.slice(0, 16) + '...');
   }
-  if (!getSession(login.sessionId)) {
+  if (!await getSession(login.sessionId)) {
     fail_('login session row exists in DB', 'session not found');
   } else {
     ok('login session row exists in DB', 'present');
@@ -226,7 +226,7 @@ async function main(): Promise<void> {
     ok('logout cookie expires in the past', logout.cookie.expires.toISOString());
   }
   // Verify the session was deleted
-  if (getSession(login.sessionId)) {
+  if (await getSession(login.sessionId)) {
     fail_('logout deletes the session row', 'still present');
   } else {
     ok('logout deletes the session row', 'deleted');
@@ -243,7 +243,7 @@ async function main(): Promise<void> {
   } else {
     ok('re-login creates a fresh session id', reLogin.sessionId.slice(0, 16) + '...');
   }
-  if (!getSession(reLogin.sessionId)) {
+  if (!await getSession(reLogin.sessionId)) {
     fail_('re-login session exists in DB', 'session not found');
   } else {
     ok('re-login session exists in DB', 'present');

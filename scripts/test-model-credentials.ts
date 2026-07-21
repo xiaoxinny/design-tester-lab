@@ -31,9 +31,9 @@ function fail_(label: string, detail: string): void {
   fail++;
 }
 
-function expectThrow(label: string, fn: () => unknown, expectedStatus: number): void {
+async function expectThrow(label: string, fn: () => unknown | Promise<unknown>, expectedStatus: number): Promise<void> {
   try {
-    fn();
+    await fn();
     fail_(label, 'expected throw, got nothing');
   } catch (e) {
     if (e instanceof CredentialError && e.statusCode === expectedStatus) {
@@ -55,9 +55,10 @@ execFileSync('pnpm', ['exec', 'tsx', 'src/db/push.ts'], { stdio: 'inherit' });
 
 async function seedUser(id: string, email: string): Promise<void> {
   const hash = await hashPassword('test-password-12chars');
-  getDb()
-    .prepare('INSERT OR REPLACE INTO users (id, email, password_hash) VALUES (?, ?, ?)')
-    .run(id, email, hash);
+  await getDb().run(
+    'INSERT OR REPLACE INTO users (id, email, password_hash) VALUES (?, ?, ?)',
+    id, email, hash,
+  );
 }
 
 async function main(): Promise<void> {
@@ -66,11 +67,11 @@ async function main(): Promise<void> {
 
   // === addCredential basics ===
 
-  const c1 = addCredential({
+  const c1 = await addCredential({
     userId: 'user-1',
     provider: 'anthropic',
     label: 'work-anthropic',
-    key: 'sk-ant-test-key-1234567890',
+    key: 'sk-ant-fake-7890',
     encryptionKey: encKey,
   });
   if (!c1.id || c1.id.length !== 32) {
@@ -97,10 +98,15 @@ async function main(): Promise<void> {
   // === Encryption at rest ===
 
   // The stored encrypted_key in the DB should NOT contain the plaintext
-  const row = getDb()
-    .prepare('SELECT encrypted_key FROM model_credentials WHERE id = ?')
-    .get(c1.id) as { encrypted_key: string };
-  if (row.encrypted_key.includes('sk-ant-test-key')) {
+  const row = await getDb().get<{ encrypted_key: string }>(
+    'SELECT encrypted_key FROM model_credentials WHERE id = ?',
+    c1.id,
+  );
+  if (!row) {
+    fail_('encrypted_key row exists in DB', 'row missing');
+    return;
+  }
+  if (row.encrypted_key.includes('sk-ant-fake-7890')) {
     fail_('encrypted_key in DB does not contain plaintext', 'leaked');
   } else {
     ok('encrypted_key in DB does not contain plaintext', 'no leak');
@@ -113,10 +119,10 @@ async function main(): Promise<void> {
 
   // === Round-trip: getDecryptedCredential returns the original ===
 
-  const decrypted = getDecryptedCredential(c1.id, 'user-1', encKey);
+  const decrypted = await getDecryptedCredential(c1.id, 'user-1', encKey);
   if (!decrypted) {
     fail_('getDecryptedCredential returns the row', 'null');
-  } else if (decrypted.key !== 'sk-ant-test-key-1234567890') {
+  } else if (decrypted.key !== 'sk-ant-fake-7890') {
     fail_('getDecryptedCredential returns the original key', `got: ${decrypted.key.slice(0, 20)}...`);
   } else {
     ok('getDecryptedCredential returns the original key', 'match');
@@ -125,7 +131,7 @@ async function main(): Promise<void> {
   // === Wrong-key decryption fails ===
 
   const wrongKey = Buffer.alloc(32, 0x99);
-  expectThrow(
+  await expectThrow(
     'decryption with wrong encryption key fails with 500',
     () => getDecryptedCredential(c1.id, 'user-1', wrongKey),
     500,
@@ -135,13 +141,13 @@ async function main(): Promise<void> {
 
   // getDecryptedCredential returns null for cross-user access — silently
   // indistinguishable from "row does not exist" (no info leak between users).
-  const crossDecrypt = getDecryptedCredential(c1.id, 'user-2', encKey);
+  const crossDecrypt = await getDecryptedCredential(c1.id, 'user-2', encKey);
   if (crossDecrypt !== null) {
     fail_("user-2 cannot read user-1's credential (returns null)", 'leaked');
   } else {
     ok("user-2 cannot read user-1's credential (returns null)", 'null');
   }
-  const cross = getCredentialMeta(c1.id, 'user-2');
+  const cross = await getCredentialMeta(c1.id, 'user-2');
   if (cross !== null) {
     fail_("user-2 cannot read user-1's metadata (returns null)", 'leaked');
   } else {
@@ -150,7 +156,7 @@ async function main(): Promise<void> {
 
   // === List ===
 
-  const list1 = listCredentials('user-1');
+  const list1 = await listCredentials('user-1');
   if (list1.length !== 1 || list1[0]!.id !== c1.id) {
     fail_('listCredentials returns the right rows for user-1', `got ${list1.length} rows`);
   } else {
@@ -163,7 +169,7 @@ async function main(): Promise<void> {
     ok('listCredentials does not leak encrypted_key', 'no leak');
   }
 
-  const list2 = listCredentials('user-2');
+  const list2 = await listCredentials('user-2');
   if (list2.length !== 0) {
     fail_('user-2 sees zero credentials', `got: ${list2.length}`);
   } else {
@@ -172,7 +178,7 @@ async function main(): Promise<void> {
 
   // === Provider validation ===
 
-  expectThrow(
+  await expectThrow(
     'invalid provider fails with 400',
     () =>
       addCredential({
@@ -185,7 +191,7 @@ async function main(): Promise<void> {
     400,
   );
 
-  expectThrow(
+  await expectThrow(
     'empty label fails with 400',
     () =>
       addCredential({
@@ -198,7 +204,7 @@ async function main(): Promise<void> {
     400,
   );
 
-  expectThrow(
+  await expectThrow(
     'empty key fails with 400',
     () =>
       addCredential({
@@ -211,7 +217,7 @@ async function main(): Promise<void> {
     400,
   );
 
-  expectThrow(
+  await expectThrow(
     'ollama provider without baseUrl fails with 400',
     () =>
       addCredential({
@@ -225,11 +231,11 @@ async function main(): Promise<void> {
   );
 
   // ollama WITH baseUrl succeeds
-  const c2 = addCredential({
+  const c2 = await addCredential({
     userId: 'user-1',
     provider: 'ollama',
     label: 'local-ollama',
-    key: 'sk-ollama-key',
+    key: 'ollama-fake-key',
     baseUrl: 'http://localhost:11434',
     encryptionKey: encKey,
   });
@@ -241,7 +247,7 @@ async function main(): Promise<void> {
 
   // === Duplicate label rejected ===
 
-  expectThrow(
+  await expectThrow(
     'duplicate label for the same user fails with 409',
     () =>
       addCredential({
@@ -256,36 +262,36 @@ async function main(): Promise<void> {
 
   // === Delete ===
 
-  if (!deleteCredential(c1.id, 'user-1')) {
+  if (!(await deleteCredential(c1.id, 'user-1'))) {
     fail_('deleteCredential returns true for existing row', 'false');
   } else {
     ok('deleteCredential returns true for existing row', 'true');
   }
-  if (deleteCredential(c1.id, 'user-1')) {
+  if (await deleteCredential(c1.id, 'user-1')) {
     fail_('deleteCredential returns false for already-deleted', 'true');
   } else {
     ok('deleteCredential returns false for already-deleted', 'false');
   }
-  if (getCredentialMeta(c1.id, 'user-1')) {
+  if (await getCredentialMeta(c1.id, 'user-1')) {
     fail_('getCredentialMeta returns null after delete', 'non-null');
   } else {
     ok('getCredentialMeta returns null after delete', 'null');
   }
 
   // cross-user delete blocked
-  const c3 = addCredential({
+  const c3 = await addCredential({
     userId: 'user-1',
     provider: 'openai',
     label: 'openai-key',
     key: 'sk-openai',
     encryptionKey: encKey,
   });
-  if (deleteCredential(c3.id, 'user-2')) {
+  if (await deleteCredential(c3.id, 'user-2')) {
     fail_('user-2 cannot delete user-1 credential', 'leaked');
   } else {
     ok('user-2 cannot delete user-1 credential', 'blocked');
   }
-  if (!deleteCredential(c3.id, 'user-1')) {
+  if (!(await deleteCredential(c3.id, 'user-1'))) {
     fail_('user-1 can delete own credential', 'failed');
   } else {
     ok('user-1 can delete own credential', 'true');
@@ -293,21 +299,21 @@ async function main(): Promise<void> {
 
   // === touchCredential ===
 
-  const c4 = addCredential({
+  const c4 = await addCredential({
     userId: 'user-1',
     provider: 'google',
     label: 'google-key',
     key: 'sk-google',
     encryptionKey: encKey,
   });
-  const before = getCredentialMeta(c4.id, 'user-1');
+  const before = await getCredentialMeta(c4.id, 'user-1');
   if (before?.lastUsedAt !== null) {
     fail_('new credential has lastUsedAt=null', `got: ${before?.lastUsedAt}`);
   } else {
     ok('new credential has lastUsedAt=null', 'null');
   }
-  touchCredential(c4.id, 'user-1');
-  const after = getCredentialMeta(c4.id, 'user-1');
+  await touchCredential(c4.id, 'user-1');
+  const after = await getCredentialMeta(c4.id, 'user-1');
   if (!after?.lastUsedAt || after.lastUsedAt <= 0) {
     fail_('touchCredential sets lastUsedAt', `got: ${after?.lastUsedAt}`);
   } else {
@@ -317,9 +323,9 @@ async function main(): Promise<void> {
   // === audit log ===
 
   // Write some events
-  logEvent({ userId: 'user-1', action: 'login_success', targetType: 'session', targetId: 'session-abc' });
-  logEvent({ userId: null, action: 'login_failure_unknown_email', targetType: 'auth', metadata: { ip: '1.2.3.4' } });
-  logEvent({
+  await logEvent({ userId: 'user-1', action: 'login_success', targetType: 'session', targetId: 'session-abc' });
+  await logEvent({ userId: null, action: 'login_failure_unknown_email', targetType: 'auth', metadata: { ip: '1.2.3.4' } });
+  await logEvent({
     userId: 'user-1',
     action: 'credential_added',
     targetType: 'credential',
@@ -327,7 +333,7 @@ async function main(): Promise<void> {
     metadata: { provider: 'google', label: 'google-key' },
   });
 
-  const user1Events = readEvents({ userId: 'user-1' });
+  const user1Events = await readEvents({ userId: 'user-1' });
   if (user1Events.length !== 2) {
     fail_('readEvents filters by userId', `got: ${user1Events.length}`);
   } else {
@@ -338,7 +344,7 @@ async function main(): Promise<void> {
   let threwNoUserId = false;
   try {
     // @ts-expect-error: testing the runtime guard
-    readEvents();
+    await readEvents();
   } catch {
     threwNoUserId = true;
   }
@@ -350,11 +356,12 @@ async function main(): Promise<void> {
   // The null-userId event was not associated with user-1, so it won't
   // appear in user-1's readEvents. Verify the schema can store it by
   // checking the row count directly.
-  const directQuery = getDb()
-    .prepare('SELECT COUNT(*) as c FROM audit_log WHERE action = ? AND user_id IS NULL')
-    .get('login_failure_unknown_email') as { c: number };
-  if (directQuery.c !== 1) {
-    fail_('audit row allows null userId (DB-level check)', `got: ${directQuery.c}`);
+  const directQuery = await getDb().get<{ c: number }>(
+    'SELECT COUNT(*) as c FROM audit_log WHERE action = ? AND user_id IS NULL',
+    'login_failure_unknown_email',
+  );
+  if (directQuery?.c !== 1) {
+    fail_('audit row allows null userId (DB-level check)', `got: ${directQuery?.c}`);
   } else {
     ok('audit row allows null userId (DB-level check)', 'null');
   }
@@ -364,7 +371,7 @@ async function main(): Promise<void> {
   try {
     // logEvent wraps errors internally; verify the type tightening — typos
     // like 'credental_added' (note: typo intentional) should fail compile.
-    logEvent({ userId: 'user-1', action: 'login_success' });
+    await logEvent({ userId: 'user-1', action: 'login_success' });
   } catch {
     threw = true;
   }
@@ -377,28 +384,28 @@ async function main(): Promise<void> {
   // === FK cascade: deleting the user deletes their credentials ===
 
   // Add a credential to user-2
-  const c5 = addCredential({
+  const c5 = await addCredential({
     userId: 'user-2',
     provider: 'anthropic',
     label: 'user-2-cred',
     key: 'sk-u2',
     encryptionKey: encKey,
   });
-  const before2 = listCredentials('user-2');
+  const before2 = await listCredentials('user-2');
   if (before2.length !== 1) {
     fail_('user-2 has 1 credential before user delete', `got: ${before2.length}`);
   } else {
     ok('user-2 has 1 credential before user delete', '1');
   }
   // Delete user-2
-  getDb().prepare('DELETE FROM users WHERE id = ?').run('user-2');
-  const after2 = listCredentials('user-2');
+  await getDb().run('DELETE FROM users WHERE id = ?', 'user-2');
+  const after2 = await listCredentials('user-2');
   if (after2.length !== 0) {
     fail_('user-2 credentials are cascade-deleted with the user', `got: ${after2.length}`);
   } else {
     ok('user-2 credentials are cascade-deleted with the user', '0');
   }
-  if (getDecryptedCredential(c5.id, 'user-2', encKey)) {
+  if (await getDecryptedCredential(c5.id, 'user-2', encKey)) {
     fail_('decrypted credential also gone after user delete', 'leaked');
   } else {
     ok('decrypted credential also gone after user delete', 'gone');

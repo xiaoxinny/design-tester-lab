@@ -42,11 +42,12 @@ const seedUserIds = ['user-1', 'user-2', 'user-3', 'user-4'];
 
 async function seedTestUsers(): Promise<void> {
   const hash = await hashPassword('test-password-12chars');
-  const stmt = getDb().prepare(
-    'INSERT OR REPLACE INTO users (id, email, password_hash) VALUES (?, ?, ?)',
-  );
+  const db = getDb();
   for (const id of seedUserIds) {
-    stmt.run(id, `${id}@test.local`, hash);
+    await db.run(
+      'INSERT OR REPLACE INTO users (id, email, password_hash) VALUES (?, ?, ?)',
+      id, `${id}@test.local`, hash,
+    );
   }
 }
 
@@ -68,7 +69,7 @@ async function main(): Promise<void> {
 
   // === Create + lookup ===
 
-  const { session, cookie } = createSession({ userId: 'user-1' });
+  const { session, cookie } = await createSession({ userId: 'user-1' });
   if (!session.id || session.id.length !== SESSION_CONFIG.SESSION_BYTES * 2) {
     fail_('session id is 64 hex chars', `got: ${session.id}`);
   } else {
@@ -100,7 +101,7 @@ async function main(): Promise<void> {
     ok('cookie secure=false in non-production', 'secure=false');
   }
 
-  const lookedUp = getSession(session.id);
+  const lookedUp = await getSession(session.id);
   if (!lookedUp) {
     fail_('getSession returns the created session', 'null');
   } else if (lookedUp.userId !== 'user-1') {
@@ -111,7 +112,7 @@ async function main(): Promise<void> {
 
   // === Two sessions have different ids ===
 
-  const { session: s2 } = createSession({ userId: 'user-1' });
+  const { session: s2 } = await createSession({ userId: 'user-1' });
   if (s2.id === session.id) {
     fail_('two sessions have different ids', 'duplicate id');
   } else {
@@ -120,12 +121,12 @@ async function main(): Promise<void> {
 
   // === Get-session on missing/empty/garbage ===
 
-  if (getSession('') !== null) {
+  if (await getSession('') !== null) {
     fail_('getSession("") returns null', 'non-null');
   } else {
     ok('getSession("") returns null', 'null');
   }
-  if (getSession('not-a-real-session-id') !== null) {
+  if (await getSession('not-a-real-session-id') !== null) {
     fail_('getSession with non-existent id returns null', 'non-null');
   } else {
     ok('getSession with non-existent id returns null', 'null');
@@ -133,17 +134,17 @@ async function main(): Promise<void> {
 
   // === Delete ===
 
-  if (!deleteSession(session.id)) {
+  if (!(await deleteSession(session.id))) {
     fail_('deleteSession returns true on existing session', 'returned false');
   } else {
     ok('deleteSession returns true on existing session', 'true');
   }
-  if (getSession(session.id) !== null) {
+  if (await getSession(session.id) !== null) {
     fail_('getSession returns null after deletion', 'non-null');
   } else {
     ok('getSession returns null after deletion', 'null');
   }
-  if (deleteSession(session.id)) {
+  if (await deleteSession(session.id)) {
     fail_('deleteSession returns false on already-deleted session', 'returned true');
   } else {
     ok('deleteSession returns false on already-deleted session', 'false');
@@ -151,11 +152,11 @@ async function main(): Promise<void> {
 
   // === deleteSessionsForUser ===
 
-  createSession({ userId: 'user-2' });
-  createSession({ userId: 'user-2' });
-  createSession({ userId: 'user-2' });
-  createSession({ userId: 'user-3' });
-  const removed = deleteSessionsForUser('user-2');
+  await createSession({ userId: 'user-2' });
+  await createSession({ userId: 'user-2' });
+  await createSession({ userId: 'user-2' });
+  await createSession({ userId: 'user-3' });
+  const removed = await deleteSessionsForUser('user-2');
   if (removed !== 3) {
     fail_('deleteSessionsForUser removes all sessions for the user', `got: ${removed}`);
   } else {
@@ -163,8 +164,8 @@ async function main(): Promise<void> {
   }
 
   // user-3 should still have their session
-  const s3Result = createSession({ userId: 'user-3' });
-  if (!getSession(s3Result.session.id)) {
+  const s3Result = await createSession({ userId: 'user-3' });
+  if (!(await getSession(s3Result.session.id))) {
     fail_('deleteSessionsForUser does not affect other users', 'user-3 session gone');
   } else {
     ok('deleteSessionsForUser does not affect other users', 'user-3 session still present');
@@ -173,9 +174,9 @@ async function main(): Promise<void> {
   // === Expired sessions ===
 
   // Create a session with a 1ms TTL, then sleep so it expires.
-  const { session: shortSession } = createSession({ userId: 'user-4', ttlMs: 1 });
+  const { session: shortSession } = await createSession({ userId: 'user-4', ttlMs: 1 });
   await new Promise((r) => setTimeout(r, 50));
-  if (getSession(shortSession.id) !== null) {
+  if (await getSession(shortSession.id) !== null) {
     fail_('getSession returns null for expired session', 'non-null');
   } else {
     ok('getSession returns null for expired session', 'null');
@@ -185,7 +186,7 @@ async function main(): Promise<void> {
 
   let threw = false;
   try {
-    createSession({ userId: '' });
+    await createSession({ userId: '' });
   } catch (e) {
     threw = e instanceof Error && e.message.includes('userId');
   }
