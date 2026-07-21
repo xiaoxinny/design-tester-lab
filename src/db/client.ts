@@ -1,38 +1,29 @@
-/**
- * Shared SQLite database client.
- *
- * Singleton wrapper around better-sqlite3. The connection opens lazily on
- * first call to `getDb()` and closes when the process exits.
- *
- * Local-mode only. In Supabase Cloud mode the app uses the Supabase JS
- * client; nothing in src/lib should import from this module in Supabase mode.
- */
-import Database from 'better-sqlite3';
-import type { Database as DatabaseType } from 'better-sqlite3';
-import { dirname } from 'node:path';
-import { mkdirSync } from 'node:fs';
+import type { DbClient } from './interface'
+import { createSqliteClient } from './sqlite-client'
+import { createPostgresClient } from './postgres-client'
 
-let db: DatabaseType | null = null;
+export type { DbClient, DbRow, DbRunResult } from './interface'
 
-export function getDb(): DatabaseType {
-  if (db !== null) return db;
-  const url = process.env.DATABASE_URL ?? './data/design-tester-lab.db';
-  const dir = dirname(url);
-  if (dir && dir !== '.') mkdirSync(dir, { recursive: true });
-  const sqlite = new Database(url);
-  sqlite.pragma('journal_mode = WAL');
-  sqlite.pragma('foreign_keys = ON');
-  db = sqlite;
-  return db;
+let client: DbClient | null = null
+
+export function getDb(): DbClient {
+  if (client) return client
+  const onlineMode = process.env.ONLINE_MODE === '1' || process.env.ONLINE_MODE === 'true'
+  const hasSupabase = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL)
+  const hasPostgresUrl = Boolean(
+    process.env.DATABASE_URL?.startsWith('postgres') ||
+    process.env.SUPABASE_DB_URL?.startsWith('postgres')
+  )
+
+  if (onlineMode || hasSupabase || hasPostgresUrl) {
+    client = createPostgresClient()
+  } else {
+    client = createSqliteClient()
+  }
+  return client
 }
 
-/**
- * Test-only: close the connection so the next `getDb()` re-opens. Used by
- * the test scripts to clean up after a run.
- */
+// Test-only: reset the cached client so the next getDb() re-creates it.
 export function closeDb(): void {
-  if (db !== null) {
-    db.close();
-    db = null;
-  }
+  client = null
 }
