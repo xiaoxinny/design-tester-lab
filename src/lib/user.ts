@@ -63,9 +63,12 @@ export async function createUser(input: CreateUserInput): Promise<UserRecord> {
   const passwordHash = await hashPassword(input.password, input.owaspLevel ?? 'minA');
 
   try {
-    getDb()
-      .prepare('INSERT INTO users (id, email, password_hash) VALUES (?, ?, ?)')
-      .run(id, email, passwordHash);
+    await getDb().run(
+      'INSERT INTO users (id, email, password_hash) VALUES (?, ?, ?)',
+      id,
+      email,
+      passwordHash,
+    );
   } catch (e) {
     if (e instanceof Error && e.message.includes('UNIQUE constraint failed: users.email')) {
       throw new UserError('an account with that email already exists', 409);
@@ -78,12 +81,13 @@ export async function createUser(input: CreateUserInput): Promise<UserRecord> {
 /**
  * Look up a user by email. Returns null if not found.
  */
-export function getUserByEmail(email: string): UserRecord | null {
+export async function getUserByEmail(email: string): Promise<UserRecord | null> {
   const normalized = email.trim().toLowerCase();
   if (!normalized) return null;
-  const row = getDb()
-    .prepare('SELECT id, email FROM users WHERE email = ?')
-    .get(normalized) as { id: string; email: string } | undefined;
+  const row = await getDb().get<{ id: string; email: string }>(
+    'SELECT id, email FROM users WHERE email = ?',
+    normalized,
+  );
   if (!row) return null;
   return { id: row.id, email: row.email };
 }
@@ -91,11 +95,12 @@ export function getUserByEmail(email: string): UserRecord | null {
 /**
  * Look up a user by id. Returns null if not found.
  */
-export function getUserById(id: string): UserRecord | null {
+export async function getUserById(id: string): Promise<UserRecord | null> {
   if (!id) return null;
-  const row = getDb()
-    .prepare('SELECT id, email FROM users WHERE id = ?')
-    .get(id) as { id: string; email: string } | undefined;
+  const row = await getDb().get<{ id: string; email: string }>(
+    'SELECT id, email FROM users WHERE id = ?',
+    id,
+  );
   if (!row) return null;
   return { id: row.id, email: row.email };
 }
@@ -113,9 +118,10 @@ export async function authenticateUser(
   owaspLevel: OwaspLevel = 'minA',
 ): Promise<{ user: UserRecord; upgradedHash: string | null } | null> {
   const normalized = email.trim().toLowerCase();
-  const row = getDb()
-    .prepare('SELECT id, email, password_hash FROM users WHERE email = ?')
-    .get(normalized) as { id: string; email: string; password_hash: string } | undefined;
+  const row = await getDb().get<{ id: string; email: string; password_hash: string }>(
+    'SELECT id, email, password_hash FROM users WHERE email = ?',
+    normalized,
+  );
   if (!row) {
     // Constant-time-ish: still hash the input password to avoid an obvious
     // timing oracle that distinguishes "email exists" from "password wrong".
@@ -135,13 +141,17 @@ export async function authenticateUser(
   // Successful login. Try to upgrade the hash if the parameters are weak.
   const upgraded = await upgradeHashIfNeeded(row.password_hash, password, owaspLevel);
   if (upgraded) {
-    getDb()
-      .prepare('UPDATE users SET password_hash = ? WHERE id = ?')
-      .run(upgraded, row.id);
+    await getDb().run(
+      'UPDATE users SET password_hash = ? WHERE id = ?',
+      upgraded,
+      row.id,
+    );
   }
   // Update last_login_at
-  getDb()
-    .prepare('UPDATE users SET last_login_at = ? WHERE id = ?')
-    .run(Date.now(), row.id);
+  await getDb().run(
+    'UPDATE users SET last_login_at = ? WHERE id = ?',
+    Date.now(),
+    row.id,
+  );
   return { user: { id: row.id, email: row.email }, upgradedHash: upgraded };
 }

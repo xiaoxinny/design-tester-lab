@@ -57,7 +57,7 @@ export async function handleAddCredential(
   const { provider, label, key, baseUrl } = parsed.data;
   const env = resolveEnv();
   try {
-    const credential = addCredential({
+    const credential = await addCredential({
       userId,
       provider: provider as Provider,
       label,
@@ -65,7 +65,7 @@ export async function handleAddCredential(
       baseUrl,
       encryptionKey: env.encryptionKey,
     });
-    logEvent({
+    await logEvent({
       userId,
       action: 'credential_added',
       targetType: 'credential',
@@ -81,14 +81,14 @@ export async function handleAddCredential(
   }
 }
 
-export function handleListCredentials(userId: string): ListResult {
+export async function handleListCredentials(userId: string): Promise<ListResult> {
   if (!userId) {
     throw new CredentialsHandlerError('not authenticated', 401);
   }
-  return { credentials: listCredentials(userId) };
+  return { credentials: await listCredentials(userId) };
 }
 
-export function handleDeleteCredential(userId: string, credentialId: string): void {
+export async function handleDeleteCredential(userId: string, credentialId: string): Promise<void> {
   if (!userId) {
     throw new CredentialsHandlerError('not authenticated', 401);
   }
@@ -98,11 +98,11 @@ export function handleDeleteCredential(userId: string, credentialId: string): vo
   // Read the metadata BEFORE deletion so the audit row records what was
   // deleted — otherwise forensic queries "what did user X delete at time T?"
   // can only see an opaque targetId with no context.
-  const meta = getCredentialMeta(credentialId, userId);
-  if (!meta || !deleteCredential(credentialId, userId)) {
+  const meta = await getCredentialMeta(credentialId, userId);
+  if (!meta || !(await deleteCredential(credentialId, userId))) {
     throw new CredentialsHandlerError('credential not found', 404);
   }
-  logEvent({
+  await logEvent({
     userId,
     action: 'credential_deleted',
     targetType: 'credential',
@@ -111,14 +111,14 @@ export function handleDeleteCredential(userId: string, credentialId: string): vo
   });
 }
 
-export function handleGetCredential(userId: string, credentialId: string): CredentialMeta {
+export async function handleGetCredential(userId: string, credentialId: string): Promise<CredentialMeta> {
   if (!userId) {
     throw new CredentialsHandlerError('not authenticated', 401);
   }
   if (!credentialId) {
     throw new CredentialsHandlerError('credential id is required', 400);
   }
-  const meta = getCredentialMeta(credentialId, userId);
+  const meta = await getCredentialMeta(credentialId, userId);
   if (!meta) {
     throw new CredentialsHandlerError('credential not found', 404);
   }

@@ -43,7 +43,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
   const env = resolveEnv();
   let user;
   try {
-    user = requireUser({
+    user = await requireUser({
       authDisabled: env.authDisabled,
       cookieHeader: req.headers.get('cookie'),
     });
@@ -87,9 +87,10 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
   }
 
   const db = getDb();
-  const row = db
-    .prepare('SELECT id, password_hash FROM users WHERE id = ?')
-    .get(user.userId) as { id: string; password_hash: string } | undefined;
+  const row = await db.get<{ id: string; password_hash: string }>(
+    'SELECT id, password_hash FROM users WHERE id = ?',
+    user.userId,
+  );
 
   // Treat a missing user as "wrong current password" rather than 404, so
   // a deleted/inconsistent account doesn't leak that the user existed.
@@ -137,13 +138,14 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     throw e;
   }
 
-  db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(
+  await db.run(
+    'UPDATE users SET password_hash = ? WHERE id = ?',
     newHash,
     row.id,
   );
 
   // Invalidate all existing sessions so stolen cookies are revoked
-  deleteSessionsForUser(row.id);
+  await deleteSessionsForUser(row.id);
 
   return NextResponse.json({ ok: true });
 }

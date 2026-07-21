@@ -96,7 +96,7 @@ export async function handleSignup(
   opts: {
     isLocalWithDefaultUser: boolean;
     secure: boolean;
-    hasExistingUser: () => boolean;
+    hasExistingUser: () => Promise<boolean>;
   },
 ): Promise<AuthSuccess> {
   const parsed = SignupBody.safeParse(rawBody);
@@ -108,7 +108,7 @@ export async function handleSignup(
   }
   const { email, password } = parsed.data;
 
-  if (opts.isLocalWithDefaultUser && opts.hasExistingUser()) {
+  if (opts.isLocalWithDefaultUser && (await opts.hasExistingUser())) {
     throw new AuthHandlerError(
       'local mode already has a user; sign in instead of creating a new account',
       409,
@@ -125,7 +125,7 @@ export async function handleSignup(
     throw e;
   }
 
-  const { session } = createSession({ userId: user.id });
+  const { session } = await createSession({ userId: user.id });
   return buildAuthSuccess(user.id, user.email, session.id, session.expiresAt, opts);
 }
 
@@ -146,20 +146,20 @@ export async function handleLogin(
   if (!result) {
     throw new AuthHandlerError('invalid email or password', 401);
   }
-  const { session } = createSession({ userId: result.user.id });
+  const { session } = await createSession({ userId: result.user.id });
   return buildAuthSuccess(result.user.id, result.user.email, session.id, session.expiresAt, opts);
 }
 
 /**
  * Log a user out. Reads the session id from the cookie header.
  */
-export function handleLogout(
+export async function handleLogout(
   cookieHeader: string | null,
   opts: { secure: boolean },
-): LogoutSuccess {
+): Promise<LogoutSuccess> {
   const sessionId = parseSessionCookie(cookieHeader);
   if (sessionId) {
-    deleteSession(sessionId);
+    await deleteSession(sessionId);
   }
   return buildLogoutSuccess(opts);
 }

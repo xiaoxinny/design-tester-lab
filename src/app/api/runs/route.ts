@@ -12,10 +12,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   let userId: string
   try {
-    userId = requireUser({
+    userId = (await requireUser({
       authDisabled: resolveEnv().authDisabled,
       cookieHeader: req.headers.get('cookie'),
-    }).userId
+    })).userId
   } catch {
     return NextResponse.json({ error: 'not authenticated' }, { status: 401 })
   }
@@ -30,9 +30,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const limit = Math.min(Math.max(Number.isFinite(rawLimit) ? rawLimit : 50, 1), 100)
   const offset = Math.max(Number.isFinite(rawOffset) ? rawOffset : 0, 0)
 
-  const runs = getDb().prepare(
-    'SELECT id, prompt_body, model_id, augmentation_stack, generated_html, lint_report, user_rating, user_notes, duration_ms, generated_tokens_used, is_public, share_slug, created_at FROM runs WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?'
-  ).all(userId, limit, offset) as Array<{
+  const db = getDb()
+  const runs = await db.all<{
     id: string
     prompt_body: string
     model_id: string
@@ -46,9 +45,16 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     is_public: number
     share_slug: string | null
     created_at: number
-  }>
+  }>(
+    'SELECT id, prompt_body, model_id, augmentation_stack, generated_html, lint_report, user_rating, user_notes, duration_ms, generated_tokens_used, is_public, share_slug, created_at FROM runs WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
+    userId, limit, offset,
+  )
 
-  const total = (getDb().prepare('SELECT COUNT(*) as count FROM runs WHERE user_id = ?').get(userId) as { count: number }).count
+  const totalRow = await db.get<{ count: number }>(
+    'SELECT COUNT(*) as count FROM runs WHERE user_id = ?',
+    userId,
+  )
+  const total = totalRow?.count ?? 0
 
   function safeJson(raw: string | null, fallback: unknown = null): unknown {
     if (!raw) return fallback

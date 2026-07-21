@@ -17,7 +17,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const limited = applyRateLimit(req, 'auth.logout');
   if (limited) return limited;
   const cookieHeader = req.headers.get('cookie');
-  const result = handleLogout(cookieHeader, {
+  const result = await handleLogout(cookieHeader, {
     secure: process.env.NODE_ENV === 'production',
   });
   const res = NextResponse.json({ ok: true }, { status: 200 });

@@ -35,7 +35,7 @@ const STACK_SEPARATOR = '\n\n---\n\n';
  * referenced augmentation does not exist in the table (which means the
  * seed loader and the runner's view of the world have diverged).
  */
-export function resolveStack(stack: AugmentationRef[]): string {
+export async function resolveStack(stack: AugmentationRef[]): Promise<string> {
   if (stack.length === 0) return '';
   // Look up all rows in one query.
   // Build a parameterized IN clause: (id=?, version=?) OR ... repeated.
@@ -46,11 +46,11 @@ export function resolveStack(stack: AugmentationRef[]): string {
     params.push(ref.id, ref.version);
   }
   const sql = `SELECT id, version, system_prompt FROM augmentations WHERE ${conditions.join(' OR ')}`;
-  const rows = getDb().prepare(sql).all(...params) as Array<{
+  const rows = await getDb().all<{
     id: string;
     version: string;
     system_prompt: string;
-  }>;
+  }>(sql, ...params);
 
   if (rows.length !== stack.length) {
     const found = new Set(rows.map((r) => `${r.id}@${r.version}`));

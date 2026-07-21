@@ -17,16 +17,16 @@ import { applyRateLimit, applyPreAuthRateLimit } from '@/lib/rate-limit-http';
 
 export const dynamic = 'force-dynamic';
 
-function getAuthedUserId(req: NextRequest): string {
+async function getAuthedUserId(req: NextRequest): Promise<string> {
   // Convert requireUser's AuthError (401) into CredentialsHandlerError so
   // the route's catch maps it to a 401 response. Without this, an expired
   // or malformed cookie becomes a 500 (Next.js default for an uncaught
   // exception thrown from a route handler).
   try {
-    return requireUser({
+    return (await requireUser({
       authDisabled: resolveEnv().authDisabled,
       cookieHeader: req.headers.get('cookie'),
-    }).userId;
+    })).userId;
   } catch {
     throw new CredentialsHandlerError('not authenticated', 401);
   }
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // the IP. Auth failures (401) don't consume a token.
   let userId: string;
   try {
-    userId = getAuthedUserId(req);
+    userId = await getAuthedUserId(req);
   } catch (e) {
     if (e instanceof CredentialsHandlerError) {
       return NextResponse.json({ error: e.message }, { status: e.statusCode });
@@ -71,10 +71,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const preLimited = applyPreAuthRateLimit(req);
   if (preLimited) return preLimited;
   try {
-    const userId = getAuthedUserId(req);
+    const userId = await getAuthedUserId(req);
     const limited = applyRateLimit(req, 'credentials.read', userId);
     if (limited) return limited;
-    const result = handleListCredentials(userId);
+    const result = await handleListCredentials(userId);
     return NextResponse.json(result, { status: 200 });
   } catch (e) {
     if (e instanceof CredentialsHandlerError) {

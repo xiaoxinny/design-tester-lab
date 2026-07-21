@@ -17,7 +17,7 @@ export default async function AppLayout({
   const cookieStore = await cookies()
   const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME)
   const cookieHeader = sessionCookie ? `${SESSION_COOKIE_NAME}=${sessionCookie.value}` : null
-  const user = getCurrentUser({
+  const user = await getCurrentUser({
     authDisabled: env.authDisabled,
     cookieHeader,
   })

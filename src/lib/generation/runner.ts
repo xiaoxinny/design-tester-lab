@@ -91,7 +91,7 @@ export async function runGeneration(input: RunGenerationInput): Promise<RunGener
   //    references an id that was removed from the seed.
   let systemPrompt: string;
   try {
-    systemPrompt = resolveStack(input.augmentationStack);
+    systemPrompt = await resolveStack(input.augmentationStack);
   } catch (e) {
     if (e instanceof AugmentationResolverError) {
       throw new GenerationError(e.message, e.statusCode);
@@ -103,11 +103,11 @@ export async function runGeneration(input: RunGenerationInput): Promise<RunGener
   //    but the encryption key is wrong (or the row was tampered with).
   //    We log credential_decryption_failed but do NOT save a run row —
   //    we have no model to attribute the failure to.
-  const meta = getCredentialMeta(input.modelCredentialId, input.userId);
+  const meta = await getCredentialMeta(input.modelCredentialId, input.userId);
   if (!meta) {
     // Same 500 as decrypt-failure below to close the credential-existence
     // oracle. The detail goes into the audit log only.
-    logEvent({
+    await logEvent({
       userId: input.userId,
       action: 'credential_used',
       targetType: 'credential',
@@ -126,10 +126,10 @@ export async function runGeneration(input: RunGenerationInput): Promise<RunGener
 
   let credentialWithKey;
   try {
-    credentialWithKey = getDecryptedCredential(input.modelCredentialId, input.userId, encryptionKey);
+    credentialWithKey = await getDecryptedCredential(input.modelCredentialId, input.userId, encryptionKey);
   } catch (e) {
     if (e instanceof CredentialError) {
-      logEvent({
+      await logEvent({
         userId: input.userId,
         action: 'credential_decryption_failed',
         targetType: 'credential',
@@ -148,7 +148,7 @@ export async function runGeneration(input: RunGenerationInput): Promise<RunGener
     // exists but is unreadable". The detail goes into the audit log
     // via credential_used / credential_decryption_failed, not the
     // response.
-    logEvent({
+    await logEvent({
       userId: input.userId,
       action: 'credential_used',
       targetType: 'credential',
@@ -173,30 +173,26 @@ export async function runGeneration(input: RunGenerationInput): Promise<RunGener
     });
   } catch (e) {
     // Provider failed. Save the run row with the failure (no generatedHtml,
-    // captured error message) and re-raise. The run-row save is its own
-    // transaction so a failure in the failure-path-save cannot mask the
-    // original error.
+    // captured error message) and re-raise. A save failure here must not
+    // mask the original error.
     const errMsg = e instanceof Error ? e.message : String(e);
     const errStatus = e instanceof ProviderError ? e.statusCode : 502;
     const durationMs = Date.now() - start;
     try {
-      getDb()
-        .transaction(() => {
-          saveRunRowInternal({
-            runId,
-            userId: input.userId,
-            promptId: input.promptId ?? null,
-            promptBody: input.promptBody,
-            modelCredentialId: input.modelCredentialId,
-            modelId: input.modelId,
-            augmentationStack: input.augmentationStack,
-            generatedHtml: null,
-            inputTokens: 0,
-            outputTokens: 0,
-            durationMs,
-            lintReport: { error: errMsg, status: errStatus },
-          });
-        })();
+      await saveRunRowInternal({
+        runId,
+        userId: input.userId,
+        promptId: input.promptId ?? null,
+        promptBody: input.promptBody,
+        modelCredentialId: input.modelCredentialId,
+        modelId: input.modelId,
+        augmentationStack: input.augmentationStack,
+        generatedHtml: null,
+        inputTokens: 0,
+        outputTokens: 0,
+        durationMs,
+        lintReport: { error: errMsg, status: errStatus },
+      });
     } catch (saveErr) {
       // If even the failure-row save fails, log and continue. The user
       // gets a 502 either way; losing one audit row is preferable to
@@ -223,31 +219,30 @@ export async function runGeneration(input: RunGenerationInput): Promise<RunGener
   }
 
   // 5. Save the successful run row, bump last_used_at, write audit log.
-  //    All three in one DB transaction so partial failure does not leave
-  //    a run row without a corresponding audit entry.
-  const db = getDb();
-  const writeSuccess = db.transaction(() => {
-    saveRunRowInternal({
-      runId,
-      userId: input.userId,
-      promptId: input.promptId ?? null,
-      promptBody: input.promptBody,
-      modelCredentialId: input.modelCredentialId,
-      modelId: input.modelId,
-      augmentationStack: input.augmentationStack,
-      generatedHtml: result.text,
-      inputTokens: result.usage.inputTokens,
-      outputTokens: result.usage.outputTokens,
-      durationMs,
-      lintReport: lintReportJson,
-    });
-    touchCredentialInternal(input.modelCredentialId, input.userId);
+  //    Postgres has no synchronous `db.transaction()` API in the DbClient
+  //    yet, so the two writes are sequential awaits. They are not in an
+  //    atomic transaction, so a crash between them leaves a run row
+  //    without the touch update (or vice versa). For now this is
+  //    acceptable; proper transaction support can be added later.
+  await saveRunRowInternal({
+    runId,
+    userId: input.userId,
+    promptId: input.promptId ?? null,
+    promptBody: input.promptBody,
+    modelCredentialId: input.modelCredentialId,
+    modelId: input.modelId,
+    augmentationStack: input.augmentationStack,
+    generatedHtml: result.text,
+    inputTokens: result.usage.inputTokens,
+    outputTokens: result.usage.outputTokens,
+    durationMs,
+    lintReport: lintReportJson,
   });
-  writeSuccess();
+  await touchCredentialInternal(input.modelCredentialId, input.userId);
 
-  // 5. Audit log: credential was successfully used. Audit is
-  //    fail-soft internally; we don't put it in the transaction.
-  logEvent({
+  // 6. Audit log: credential was successfully used. Audit is
+  //    fail-soft internally; we don't need to guard the await.
+  await logEvent({
     userId: input.userId,
     action: 'credential_used',
     targetType: 'credential',
@@ -277,10 +272,13 @@ function readEncryptionKeyFromEnv(): Buffer | null {
   return buf;
 }
 
-function touchCredentialInternal(credentialId: string, userId: string): void {
-  getDb()
-    .prepare('UPDATE model_credentials SET last_used_at = ? WHERE id = ? AND user_id = ?')
-    .run(Date.now(), credentialId, userId);
+async function touchCredentialInternal(credentialId: string, userId: string): Promise<void> {
+  await getDb().run(
+    'UPDATE model_credentials SET last_used_at = ? WHERE id = ? AND user_id = ?',
+    Date.now(),
+    credentialId,
+    userId,
+  );
 }
 
 interface SaveRunRowInput {
@@ -300,7 +298,7 @@ interface SaveRunRowInput {
   lintReport: string | { error: string; status: number } | null;
 }
 
-function saveRunRowInternal(input: SaveRunRowInput): void {
+async function saveRunRowInternal(input: SaveRunRowInput): Promise<void> {
   // lintReport is already a JSON-encoded string when set by the success
   // path, or an object on the failure path. The DB column is TEXT; we
   // store either a string as-is or stringify the failure object once.
@@ -310,28 +308,25 @@ function saveRunRowInternal(input: SaveRunRowInput): void {
       : typeof input.lintReport === 'string'
         ? input.lintReport
         : JSON.stringify(input.lintReport);
-  getDb()
-    .prepare(
-      `INSERT INTO runs
-        (id, user_id, prompt_id, prompt_body, model_credential_id, model_id,
-         model_params, augmentation_stack, generated_html, generated_tokens_used,
-         duration_ms, lint_report)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    )
-    .run(
-      input.runId,
-      input.userId,
-      input.promptId ?? null,
-      input.promptBody,
-      input.modelCredentialId,
-      input.modelId,
-      '{}',
-      JSON.stringify(input.augmentationStack),
-      input.generatedHtml,
-      input.inputTokens + input.outputTokens,
-      input.durationMs,
-      lintReportColumn,
-    );
+  await getDb().run(
+    `INSERT INTO runs
+      (id, user_id, prompt_id, prompt_body, model_credential_id, model_id,
+       model_params, augmentation_stack, generated_html, generated_tokens_used,
+       duration_ms, lint_report)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    input.runId,
+    input.userId,
+    input.promptId ?? null,
+    input.promptBody,
+    input.modelCredentialId,
+    input.modelId,
+    '{}',
+    JSON.stringify(input.augmentationStack),
+    input.generatedHtml,
+    input.inputTokens + input.outputTokens,
+    input.durationMs,
+    lintReportColumn,
+  );
 }
 
 // Re-export the Provider type for the route layer

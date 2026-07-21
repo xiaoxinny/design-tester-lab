@@ -11,7 +11,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   // Try to get the authenticated user, but don't require it
   try {
-    const user = requireUser({
+    const user = await requireUser({
       authDisabled: env.authDisabled,
       cookieHeader: req.headers.get('cookie'),
     })
@@ -20,24 +20,34 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     // Not authenticated — only return system prompts
   }
 
+  const db = getDb()
+
   // Query system prompts (visible to everyone)
-  const systemPrompts = getDb().prepare(
-    'SELECT id, title, body, category, difficulty, expected_tokens FROM prompts WHERE is_system = 1 ORDER BY category, title'
-  ).all() as Array<{
+  const systemPrompts = await db.all<{
     id: string
     title: string
     body: string
     category: string | null
     difficulty: string | null
     expected_tokens: number | null
-  }>
+  }>(
+    'SELECT id, title, body, category, difficulty, expected_tokens FROM prompts WHERE is_system = 1 ORDER BY category, title',
+  )
 
   // Query user's own prompts (if authenticated)
   let userPrompts: typeof systemPrompts = []
   if (userId) {
-    userPrompts = getDb().prepare(
-      'SELECT id, title, body, category, difficulty, expected_tokens FROM prompts WHERE user_id = ? ORDER BY created_at DESC'
-    ).all(userId) as typeof systemPrompts
+    userPrompts = await db.all<{
+      id: string
+      title: string
+      body: string
+      category: string | null
+      difficulty: string | null
+      expected_tokens: number | null
+    }>(
+      'SELECT id, title, body, category, difficulty, expected_tokens FROM prompts WHERE user_id = ? ORDER BY created_at DESC',
+      userId,
+    )
   }
 
   return NextResponse.json({

@@ -40,9 +40,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   // mailbox OAuth into the victim's account without ever knowing the
   // password. Existing email/password users must sign in with their password
   // and link OAuth explicitly from settings.
-  const existing = db
-    .prepare('SELECT id FROM users WHERE email = ?')
-    .get(email) as { id: string } | undefined
+  const existing = await db.get<{ id: string }>(
+    'SELECT id FROM users WHERE email = ?',
+    email,
+  )
 
   let user: { id: string }
   if (existing) {
@@ -53,12 +54,15 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const id = randomBytes(16).toString('hex')
     // OAuth users get a random unguessable password hash (they authenticate via OAuth, not password)
     const placeholderHash = '=19=65536,t=3,p=4$' + randomBytes(16).toString('base64') + '$' + randomBytes(32).toString('base64')
-    db.prepare('INSERT INTO users (id, email, password_hash) VALUES (?, ?, ?)').run(id, email, placeholderHash)
+    await db.run(
+      'INSERT INTO users (id, email, password_hash) VALUES (?, ?, ?)',
+      id, email, placeholderHash,
+    )
     user = { id }
   }
 
   // Create a session in our sessions table
-  const { session, cookie } = createSession({ userId: user.id })
+  const { session, cookie } = await createSession({ userId: user.id })
 
   // Set the session cookie and redirect to dashboard
   const response = NextResponse.redirect(new URL('/dashboard', origin))

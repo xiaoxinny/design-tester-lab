@@ -22,7 +22,7 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
   if (preLimited) return preLimited
   let userId: string
   try {
-    userId = requireUser({ authDisabled: resolveEnv().authDisabled, cookieHeader: req.headers.get('cookie') }).userId
+    userId = (await requireUser({ authDisabled: resolveEnv().authDisabled, cookieHeader: req.headers.get('cookie') })).userId
   } catch {
     return NextResponse.json({ error: 'not authenticated' }, { status: 401 })
   }
@@ -30,9 +30,7 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
   if (limited) return limited
 
   const { id } = await ctx.params
-  const run = getDb().prepare(
-    'SELECT id, prompt_body, model_id, augmentation_stack, generated_html, lint_report, user_rating, user_notes, duration_ms, generated_tokens_used, is_public, share_slug, created_at FROM runs WHERE id = ? AND user_id = ?'
-  ).get(id, userId) as {
+  const run = await getDb().get<{
     id: string
     prompt_body: string
     model_id: string
@@ -46,7 +44,10 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
     is_public: number
     share_slug: string | null
     created_at: number
-  } | undefined
+  }>(
+    'SELECT id, prompt_body, model_id, augmentation_stack, generated_html, lint_report, user_rating, user_notes, duration_ms, generated_tokens_used, is_public, share_slug, created_at FROM runs WHERE id = ? AND user_id = ?',
+    id, userId,
+  )
 
   if (!run) return NextResponse.json({ error: 'not found' }, { status: 404 })
 
@@ -74,7 +75,7 @@ export async function PATCH(req: NextRequest, ctx: RouteContext): Promise<NextRe
   if (preLimited) return preLimited
   let userId: string
   try {
-    userId = requireUser({ authDisabled: resolveEnv().authDisabled, cookieHeader: req.headers.get('cookie') }).userId
+    userId = (await requireUser({ authDisabled: resolveEnv().authDisabled, cookieHeader: req.headers.get('cookie') })).userId
   } catch {
     return NextResponse.json({ error: 'not authenticated' }, { status: 401 })
   }
@@ -112,7 +113,7 @@ export async function PATCH(req: NextRequest, ctx: RouteContext): Promise<NextRe
   if (updates.length === 0) return NextResponse.json({ error: 'no valid fields to update' }, { status: 400 })
 
   params.push(id, userId)
-  const result = getDb().prepare('UPDATE runs SET ' + updates.join(', ') + ' WHERE id = ? AND user_id = ?').run(...params)
+  const result = await getDb().run('UPDATE runs SET ' + updates.join(', ') + ' WHERE id = ? AND user_id = ?', ...params)
   if (result.changes === 0) return NextResponse.json({ error: 'not found' }, { status: 404 })
   return NextResponse.json({ ok: true })
 }

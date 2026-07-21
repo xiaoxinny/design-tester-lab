@@ -68,7 +68,7 @@ export interface AddCredentialInput {
  * Encrypts the key with AES-256-GCM bound to (userId, credentialId). Throws
  * CredentialError(400) on invalid input.
  */
-export function addCredential(input: AddCredentialInput): CredentialMeta {
+export async function addCredential(input: AddCredentialInput): Promise<CredentialMeta> {
   if (!input.userId) {
     throw new CredentialError('userId is required', 400);
   }
@@ -96,13 +96,17 @@ export function addCredential(input: AddCredentialInput): CredentialMeta {
   });
 
   try {
-    getDb()
-      .prepare(
-        `INSERT INTO model_credentials
-         (id, user_id, provider, label, encrypted_key, base_url, key_version)
-         VALUES (?, ?, ?, ?, ?, ?, 1)`,
-      )
-      .run(id, input.userId, input.provider, label, stored, input.baseUrl ?? null);
+    await getDb().run(
+      `INSERT INTO model_credentials
+       (id, user_id, provider, label, encrypted_key, base_url, key_version)
+       VALUES (?, ?, ?, ?, ?, ?, 1)`,
+      id,
+      input.userId,
+      input.provider,
+      label,
+      stored,
+      input.baseUrl ?? null,
+    );
   } catch (e) {
     if (e instanceof Error && e.message.includes('UNIQUE constraint failed')) {
       throw new CredentialError('a credential with that label already exists for this user', 409);
@@ -110,7 +114,7 @@ export function addCredential(input: AddCredentialInput): CredentialMeta {
     throw e;
   }
 
-  const created = getCredentialMeta(id, input.userId);
+  const created = await getCredentialMeta(id, input.userId);
   if (!created) {
     throw new CredentialError('credential was inserted but cannot be read back', 500);
   }
@@ -120,25 +124,24 @@ export function addCredential(input: AddCredentialInput): CredentialMeta {
 /**
  * List credential metadata for a user. Does NOT return the encrypted key.
  */
-export function listCredentials(userId: string): CredentialMeta[] {
+export async function listCredentials(userId: string): Promise<CredentialMeta[]> {
   if (!userId) return [];
-  const rows = getDb()
-    .prepare(
-      `SELECT id, user_id, provider, label, base_url, key_version, last_used_at, created_at
-       FROM model_credentials
-       WHERE user_id = ?
-       ORDER BY created_at ASC`,
-    )
-    .all(userId) as Array<{
-      id: string;
-      user_id: string;
-      provider: Provider;
-      label: string;
-      base_url: string | null;
-      key_version: number;
-      last_used_at: number | null;
-      created_at: number;
-    }>;
+  const rows = await getDb().all<{
+    id: string;
+    user_id: string;
+    provider: Provider;
+    label: string;
+    base_url: string | null;
+    key_version: number;
+    last_used_at: number | null;
+    created_at: number;
+  }>(
+    `SELECT id, user_id, provider, label, base_url, key_version, last_used_at, created_at
+     FROM model_credentials
+     WHERE user_id = ?
+     ORDER BY created_at ASC`,
+    userId,
+  );
   return rows.map(rowToMeta);
 }
 
@@ -146,26 +149,24 @@ export function listCredentials(userId: string): CredentialMeta[] {
  * Get credential metadata for one row. Returns null if not found OR if
  * the row belongs to a different user (no info leak between users).
  */
-export function getCredentialMeta(id: string, userId: string): CredentialMeta | null {
+export async function getCredentialMeta(id: string, userId: string): Promise<CredentialMeta | null> {
   if (!id || !userId) return null;
-  const row = getDb()
-    .prepare(
-      `SELECT id, user_id, provider, label, base_url, key_version, last_used_at, created_at
-       FROM model_credentials
-       WHERE id = ? AND user_id = ?`,
-    )
-    .get(id, userId) as
-    | {
-        id: string;
-        user_id: string;
-        provider: Provider;
-        label: string;
-        base_url: string | null;
-        key_version: number;
-        last_used_at: number | null;
-        created_at: number;
-      }
-    | undefined;
+  const row = await getDb().get<{
+    id: string;
+    user_id: string;
+    provider: Provider;
+    label: string;
+    base_url: string | null;
+    key_version: number;
+    last_used_at: number | null;
+    created_at: number;
+  }>(
+    `SELECT id, user_id, provider, label, base_url, key_version, last_used_at, created_at
+     FROM model_credentials
+     WHERE id = ? AND user_id = ?`,
+    id,
+    userId,
+  );
   if (!row) return null;
   return rowToMeta(row);
 }
@@ -181,27 +182,25 @@ export function getCredentialMeta(id: string, userId: string): CredentialMeta | 
  * caller is responsible for not logging, not persisting, and discarding the
  * key as soon as the generation completes.
  */
-export function getDecryptedCredential(id: string, userId: string, encryptionKey: Buffer): CredentialWithKey | null {
+export async function getDecryptedCredential(id: string, userId: string, encryptionKey: Buffer): Promise<CredentialWithKey | null> {
   if (!id || !userId) return null;
-  const row = getDb()
-    .prepare(
-      `SELECT id, user_id, provider, label, encrypted_key, base_url, key_version, last_used_at, created_at
-       FROM model_credentials
-       WHERE id = ? AND user_id = ?`,
-    )
-    .get(id, userId) as
-    | {
-        id: string;
-        user_id: string;
-        provider: Provider;
-        label: string;
-        encrypted_key: string;
-        base_url: string | null;
-        key_version: number;
-        last_used_at: number | null;
-        created_at: number;
-      }
-    | undefined;
+  const row = await getDb().get<{
+    id: string;
+    user_id: string;
+    provider: Provider;
+    label: string;
+    encrypted_key: string;
+    base_url: string | null;
+    key_version: number;
+    last_used_at: number | null;
+    created_at: number;
+  }>(
+    `SELECT id, user_id, provider, label, encrypted_key, base_url, key_version, last_used_at, created_at
+     FROM model_credentials
+     WHERE id = ? AND user_id = ?`,
+    id,
+    userId,
+  );
   if (!row) return null;
   let key: string;
   try {
@@ -229,11 +228,13 @@ export function getDecryptedCredential(id: string, userId: string, encryptionKey
  * Use the userId parameter to enforce that users can only delete their own
  * credentials (no cross-user deletion).
  */
-export function deleteCredential(id: string, userId: string): boolean {
+export async function deleteCredential(id: string, userId: string): Promise<boolean> {
   if (!id || !userId) return false;
-  const info = getDb()
-    .prepare('DELETE FROM model_credentials WHERE id = ? AND user_id = ?')
-    .run(id, userId);
+  const info = await getDb().run(
+    'DELETE FROM model_credentials WHERE id = ? AND user_id = ?',
+    id,
+    userId,
+  );
   return info.changes > 0;
 }
 
@@ -241,11 +242,14 @@ export function deleteCredential(id: string, userId: string): boolean {
  * Update the last_used_at timestamp for a credential. Fire-and-forget:
  * the caller does not need to handle the result.
  */
-export function touchCredential(id: string, userId: string): void {
+export async function touchCredential(id: string, userId: string): Promise<void> {
   if (!id || !userId) return;
-  getDb()
-    .prepare('UPDATE model_credentials SET last_used_at = ? WHERE id = ? AND user_id = ?')
-    .run(Date.now(), id, userId);
+  await getDb().run(
+    'UPDATE model_credentials SET last_used_at = ? WHERE id = ? AND user_id = ?',
+    Date.now(),
+    id,
+    userId,
+  );
 }
 
 function rowToMeta(row: {

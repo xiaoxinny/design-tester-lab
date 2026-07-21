@@ -17,12 +17,12 @@ type ComparisonRow = {
   created_at: number;
 };
 
-function authenticate(req: NextRequest): string | NextResponse {
+async function authenticate(req: NextRequest): Promise<string | NextResponse> {
   try {
-    return requireUser({
+    return (await requireUser({
       authDisabled: resolveEnv().authDisabled,
       cookieHeader: req.headers.get('cookie'),
-    }).userId;
+    })).userId;
   } catch {
     return NextResponse.json({ error: 'not authenticated' }, { status: 401 });
   }
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const preLimited = applyPreAuthRateLimit(req);
   if (preLimited) return preLimited;
 
-  const auth = authenticate(req);
+  const auth = await authenticate(req);
   if (auth instanceof NextResponse) return auth;
   const userId = auth;
 
@@ -60,10 +60,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'invalid request body' }, { status: 400 });
   }
 
-  const ownedRuns = getDb().prepare(
+  const ownedRuns = await getDb().get<{ count: number }>(
     'SELECT COUNT(*) AS count FROM runs WHERE user_id = ? AND id IN (?, ?)',
-  ).get(userId, runAId, runBId) as { count: number };
-  if (ownedRuns.count !== 2) {
+    userId, runAId, runBId,
+  );
+  if (ownedRuns?.count !== 2) {
     return NextResponse.json({ error: 'run not found' }, { status: 404 });
   }
 
@@ -76,9 +77,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     notes: notes ?? null,
     created_at: Date.now(),
   };
-  getDb().prepare(
+  await getDb().run(
     'INSERT INTO run_comparisons (id, user_id, run_a_id, run_b_id, winner, notes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-  ).run(
     comparison.id,
     comparison.user_id,
     comparison.run_a_id,
@@ -95,16 +95,17 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const preLimited = applyPreAuthRateLimit(req);
   if (preLimited) return preLimited;
 
-  const auth = authenticate(req);
+  const auth = await authenticate(req);
   if (auth instanceof NextResponse) return auth;
   const userId = auth;
 
   const limited = applyRateLimit(req, 'credentials.read', userId);
   if (limited) return limited;
 
-  const comparisons = getDb().prepare(
+  const comparisons = await getDb().all<ComparisonRow>(
     'SELECT id, user_id, run_a_id, run_b_id, winner, notes, created_at FROM run_comparisons WHERE user_id = ? ORDER BY created_at DESC',
-  ).all(userId) as ComparisonRow[];
+    userId,
+  );
 
   return NextResponse.json({ comparisons });
 }

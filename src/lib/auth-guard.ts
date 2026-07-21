@@ -10,7 +10,7 @@
  *   import { requireUser } from '@/lib/auth-guard';
  *
  *   export async function POST(req: NextRequest) {
- *     const user = requireUser(req); // throws on unauth
+ *     const user = await requireUser({...}); // throws on unauth
  *     // user.userId is now guaranteed non-null
  *   }
  *
@@ -48,11 +48,14 @@ export interface AuthedUser {
  * `authDisabled` is passed in (rather than read from process.env here) so
  * that the env-cached resolution is consistent across the app and so
  * tests can override it.
+ *
+ * Async because the underlying session lookup goes through the async
+ * DbClient interface.
  */
-export function requireUser(opts: {
+export async function requireUser(opts: {
   authDisabled?: boolean;
   cookieHeader?: string | null;
-}): AuthedUser {
+}): Promise<AuthedUser> {
   if (opts.authDisabled) {
     return { userId: DEV_USER_ID, email: DEV_USER_EMAIL, isDev: true };
   }
@@ -66,7 +69,7 @@ export function requireUser(opts: {
   }
   let session;
   try {
-    session = getSession(sessionId);
+    session = await getSession(sessionId);
   } catch (e) {
     if (e instanceof SessionError) {
       throw new AuthError('session lookup failed', 500);
@@ -86,12 +89,12 @@ export function requireUser(opts: {
  * can be reached by both authed and anon users (e.g. /api/me returning
  * the current user, or null if logged out).
  */
-export function getCurrentUser(opts: {
+export async function getCurrentUser(opts: {
   authDisabled?: boolean;
   cookieHeader?: string | null;
-}): AuthedUser | null {
+}): Promise<AuthedUser | null> {
   try {
-    return requireUser(opts);
+    return await requireUser(opts);
   } catch (e) {
     if (e instanceof AuthError && e.statusCode === 401) return null;
     throw e;

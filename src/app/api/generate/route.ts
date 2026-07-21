@@ -51,12 +51,12 @@ const GenerateBody = z.object({
   timeoutMs: z.number().int().positive().max(5 * 60_000).optional(),
 });
 
-function getAuthedUserId(req: NextRequest): string {
+async function getAuthedUserId(req: NextRequest): Promise<string> {
   try {
-    return requireUser({
+    return (await requireUser({
       authDisabled: resolveEnv().authDisabled,
       cookieHeader: req.headers.get('cookie'),
-    }).userId;
+    })).userId;
   } catch {
     // 401 is signalled by throwing a GenerationError so the route's catch
     // maps it to the right status code.
@@ -85,7 +85,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   let userId: string;
   try {
-    userId = getAuthedUserId(req);
+    userId = await getAuthedUserId(req);
   } catch (e) {
     if (e instanceof GenerationError) {
       return NextResponse.json({ error: e.message }, { status: e.statusCode });

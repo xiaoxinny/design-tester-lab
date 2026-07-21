@@ -82,24 +82,25 @@ export interface AuditLogRow {
  * Write an audit event. Errors are swallowed (logged to stderr) so that
  * audit logging never breaks the calling code path. The audit gap should
  * be visible in the application's logs but not in the user response.
+ *
+ * Async to match the underlying DbClient; callers in synchronous code paths
+ * should `await logEvent(...)` to be sure the row landed before the
+ * request returns.
  */
-export function logEvent(input: LogEventInput): void {
+export async function logEvent(input: LogEventInput): Promise<void> {
   try {
     const id = randomBytes(16).toString('hex');
     const metadataJson = input.metadata !== undefined ? JSON.stringify(input.metadata) : null;
-    getDb()
-      .prepare(
-        `INSERT INTO audit_log (id, user_id, action, target_type, target_id, metadata)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-      )
-      .run(
-        id,
-        input.userId,
-        input.action,
-        input.targetType ?? null,
-        input.targetId ?? null,
-        metadataJson,
-      );
+    await getDb().run(
+      `INSERT INTO audit_log (id, user_id, action, target_type, target_id, metadata)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      id,
+      input.userId,
+      input.action,
+      input.targetType ?? null,
+      input.targetId ?? null,
+      metadataJson,
+    );
   } catch (e) {
     // Audit must never break the calling code path. Log enough to identify
     // which event failed (action + targetId) but NOT the full input —
@@ -124,20 +125,20 @@ interface AuditRowRaw {
  * intentionally not implemented — the calling layer must enforce that
  * a user only sees their own events.
  */
-export function readEvents(opts: { userId: string; limit?: number }): AuditLogRow[] {
+export async function readEvents(opts: { userId: string; limit?: number }): Promise<AuditLogRow[]> {
   if (!opts.userId) {
     throw new Error('readEvents requires userId');
   }
   const limit = Math.min(opts.limit ?? 100, 1000);
-  const rows = getDb()
-    .prepare(
-      `SELECT id, user_id, action, target_type, target_id, metadata, created_at
-       FROM audit_log
-       WHERE user_id = ?
-       ORDER BY created_at DESC
-       LIMIT ?`,
-    )
-    .all(opts.userId, limit) as AuditRowRaw[];
+  const rows = await getDb().all<AuditRowRaw>(
+    `SELECT id, user_id, action, target_type, target_id, metadata, created_at
+     FROM audit_log
+     WHERE user_id = ?
+     ORDER BY created_at DESC
+     LIMIT ?`,
+    opts.userId,
+    limit,
+  );
   return rows.map((row) => ({
     id: row.id,
     userId: row.user_id,

@@ -28,9 +28,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const env = resolveEnv();
   const isLocalWithDefaultUser =
     env.mode === 'local' && env.local?.defaultUser !== null && env.local?.defaultUser !== undefined;
-  const hasExistingUser = (): boolean => {
-    const row = getDb().prepare('SELECT COUNT(*) as c FROM users').get() as { c: number };
-    return row.c > 0;
+  const hasExistingUser = async (): Promise<boolean> => {
+    const row = await getDb().get<{ c: number }>('SELECT COUNT(*) as c FROM users');
+    return (row?.c ?? 0) > 0;
   };
   try {
     const result = await handleSignup(body, {

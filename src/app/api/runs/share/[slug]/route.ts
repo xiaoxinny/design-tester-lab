@@ -9,7 +9,10 @@ interface RouteContext {
 
 export async function GET(_req: NextRequest, ctx: RouteContext): Promise<NextResponse> {
   const { slug } = await ctx.params
-  const run = getDb().prepare('SELECT * FROM runs WHERE share_slug = ? AND is_public = 1').get(slug) as any
+  const run = await getDb().get<{ augmentation_stack: string; lint_report: string | null; is_public: number; [k: string]: unknown }>(
+    'SELECT * FROM runs WHERE share_slug = ? AND is_public = 1',
+    slug,
+  )
   if (!run) return NextResponse.json({ error: 'not found' }, { status: 404 })
   return NextResponse.json({
     run: {

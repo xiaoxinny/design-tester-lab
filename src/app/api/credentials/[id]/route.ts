@@ -15,12 +15,12 @@ interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
-function getAuthedUserId(req: NextRequest): string {
+async function getAuthedUserId(req: NextRequest): Promise<string> {
   try {
-    return requireUser({
+    return (await requireUser({
       authDisabled: resolveEnv().authDisabled,
       cookieHeader: req.headers.get('cookie'),
-    }).userId;
+    })).userId;
   } catch {
     throw new CredentialsHandlerError('not authenticated', 401);
   }
@@ -30,11 +30,11 @@ export async function GET(req: NextRequest, ctx: RouteContext): Promise<NextResp
   const preLimited = applyPreAuthRateLimit(req);
   if (preLimited) return preLimited;
   try {
-    const userId = getAuthedUserId(req);
+    const userId = await getAuthedUserId(req);
     const limited = applyRateLimit(req, 'credentials.read', userId);
     if (limited) return limited;
     const { id } = await ctx.params;
-    const credential = handleGetCredential(userId, id);
+    const credential = await handleGetCredential(userId, id);
     return NextResponse.json({ credential }, { status: 200 });
   } catch (e) {
     if (e instanceof CredentialsHandlerError) {
@@ -48,11 +48,11 @@ export async function DELETE(req: NextRequest, ctx: RouteContext): Promise<NextR
   const preLimited = applyPreAuthRateLimit(req);
   if (preLimited) return preLimited;
   try {
-    const userId = getAuthedUserId(req);
+    const userId = await getAuthedUserId(req);
     const limited = applyRateLimit(req, 'credentials.write', userId);
     if (limited) return limited;
     const { id } = await ctx.params;
-    handleDeleteCredential(userId, id);
+    await handleDeleteCredential(userId, id);
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch (e) {
     if (e instanceof CredentialsHandlerError) {
