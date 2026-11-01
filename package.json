@@ -70,7 +70,7 @@
     "postgres": "^3.4.9",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
-    "remeda": "^2.57.0",
+    "remeda": "2.52.0",
     "tailwind-merge": "^3.7.0",
     "zod": "^4.6.7"
   },
@@ -78,7 +78,6 @@
     "@playwright/test": "^1.64.1",
     "@types/better-sqlite3": "^9.6.0",
     "@types/js-yaml": "^4.0.9",
-
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
@@ -90,7 +89,6 @@
     "glob": "^13.0.6",
     "postcss": "^8.5.32",
     "tailwindcss": "^3.4.19",
-
     "tailwindcss-animate": "^1.0.7",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
